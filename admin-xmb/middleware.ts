@@ -13,8 +13,12 @@ export default auth((req) => {
     return Response.redirect(new URL("/login", req.nextUrl));
   }
 
-  if ((isOnLogin || isOnRoot) && isLoggedIn && !isOnPasswordReset) {
+  if ((isOnLogin || isOnRoot) && isLoggedIn) {
     return Response.redirect(new URL("/dashboard", req.nextUrl));
+  }
+
+  if (isOnRoot && !isLoggedIn) {
+    return Response.redirect(new URL("/login", req.nextUrl));
   }
 });
 
