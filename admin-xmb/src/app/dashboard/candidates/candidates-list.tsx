@@ -57,9 +57,10 @@ export function CandidatesList({
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
       const searchLower = search.toLowerCase();
+      const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
       const matchesSearch =
         !search ||
-        c.name.toLowerCase().includes(searchLower) ||
+        fullName.includes(searchLower) ||
         c.email?.toLowerCase().includes(searchLower) ||
         c.targetRole?.toLowerCase().includes(searchLower) ||
         (c.skills as string[] | null)?.some((s) =>
@@ -86,7 +87,9 @@ export function CandidatesList({
 
       const matchesLocation =
         !locationFilter ||
-        c.location?.toLowerCase().includes(locationFilter.toLowerCase());
+        c.city?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+        c.postalCode?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+        c.canton?.toLowerCase().includes(locationFilter.toLowerCase());
 
       return (
         matchesSearch &&
@@ -246,7 +249,7 @@ export function CandidatesList({
                 <Input
                   value={locationFilter}
                   onChange={(e) => setLocationFilter(e.target.value)}
-                  placeholder="z.B. Zürich"
+                  placeholder="PLZ, Ort oder Kanton"
                 />
               </div>
             </div>
@@ -342,11 +345,7 @@ export function CandidatesList({
                       className="flex-shrink-0"
                     >
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-lg font-semibold text-amber-400">
-                        {candidate.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)}
+                        {candidate.firstName[0]}{candidate.lastName[0]}
                       </div>
                     </Link>
 
@@ -359,7 +358,7 @@ export function CandidatesList({
                               href={`/dashboard/candidates/${candidate.id}`}
                               className="font-semibold text-lg text-slate-900 dark:text-white hover:text-amber-500"
                             >
-                              {candidate.name}
+                              {candidate.firstName} {candidate.lastName}
                             </Link>
                             <span
                               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -383,7 +382,7 @@ export function CandidatesList({
                               Bearbeiten
                             </Button>
                           </Link>
-                          <DeleteCandidateButton id={candidate.id} name={candidate.name} />
+                          <DeleteCandidateButton id={candidate.id} name={`${candidate.firstName} ${candidate.lastName}`} />
                         </div>
                       </div>
 
@@ -407,10 +406,12 @@ export function CandidatesList({
                             {candidate.phone}
                           </a>
                         )}
-                        {candidate.location && (
+                        {(candidate.city || candidate.canton) && (
                           <span className="flex items-center gap-1.5">
                             <MapPin className="h-4 w-4" />
-                            {candidate.location}
+                            {candidate.postalCode && `${candidate.postalCode} `}
+                            {candidate.city}
+                            {candidate.canton && ` (${candidate.canton})`}
                           </span>
                         )}
                         {candidate.yearsOfExperience && (

@@ -21,7 +21,7 @@ export default async function EditCandidatePage({ params }: EditCandidatePagePro
           Kandidat bearbeiten
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          {candidate.name}
+          {candidate.firstName} {candidate.lastName}
         </p>
       </div>
       <CandidateForm candidate={candidate} />

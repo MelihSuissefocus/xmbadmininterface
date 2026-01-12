@@ -16,8 +16,75 @@ export const jobStatusEnum = pgEnum("job_status", ["draft", "published", "archiv
 export const candidateStatusEnum = pgEnum("candidate_status", ["new", "reviewed", "rejected", "placed"]);
 export const assignmentStatusEnum = pgEnum("assignment_status", ["proposed", "interviewing", "offered", "rejected", "placed"]);
 export const contractBillingEnum = pgEnum("contract_billing", ["payroll", "company", "hybrid"]);
+export const companyTypeEnum = pgEnum("company_type", ["ag", "gmbh", "einzelunternehmen"]);
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "recruiter", "viewer"]);
+export const auditActionEnum = pgEnum("audit_action", ["create", "update", "delete", "login", "logout", "password_reset"]);
+
+export const skills = pgTable("skills", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const emailTemplates = pgTable("email_templates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  description: text("description"),
+  isActive: integer("is_active").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const systemSettings = pgTable("system_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  category: text("category").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  logo: text("logo"),
+  email: text("email"),
+  phone: text("phone"),
+  street: text("street"),
+  postalCode: text("postal_code"),
+  city: text("city"),
+  country: text("country"),
+  website: text("website"),
+  primaryColor: text("primary_color").default("#f59e0b"),
+  secondaryColor: text("secondary_color").default("#1e293b"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  action: auditActionEnum("action").notNull(),
+  entity: text("entity").notNull(),
+  entityId: text("entity_id"),
+  details: jsonb("details"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -65,19 +132,25 @@ export const jobs = pgTable("jobs", {
 
 export const candidates = pgTable("candidates", {
   id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   email: text("email"),
   phone: text("phone"),
-  location: text("location"),
+  street: text("street"),
+  postalCode: text("postal_code"),
+  city: text("city"),
+  canton: text("canton"),
   birthdate: date("birthdate"),
   linkedinUrl: text("linkedin_url"),
-  targetRole: text("target_role"),
   yearsOfExperience: integer("years_of_experience"),
-  currentSalary: integer("current_salary"),
   expectedSalary: integer("expected_salary"),
   availableFrom: date("available_from"),
   workloadPreference: text("workload_preference"),
   noticePeriod: text("notice_period"),
+  desiredHourlyRate: integer("desired_hourly_rate"),
+  isSubcontractor: integer("is_subcontractor").default(0),
+  companyName: text("company_name"),
+  companyType: companyTypeEnum("company_type"),
   skills: jsonb("skills").$type<string[]>(),
   certificates: jsonb("certificates").$type<{
     name: string;
@@ -91,15 +164,22 @@ export const candidates = pgTable("candidates", {
   education: jsonb("education").$type<{
     degree: string;
     institution: string;
-    year: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
   }[]>(),
   experience: jsonb("experience").$type<{
     role: string;
     company: string;
-    from: string;
-    to: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+    current: boolean;
     description: string;
   }[]>(),
+  highlights: jsonb("highlights").$type<string[]>(),
   originalCvUrl: text("original_cv_url"),
   brandedCvUrl: text("branded_cv_url"),
   parsedData: jsonb("parsed_data"),
@@ -155,3 +235,15 @@ export type Candidate = typeof candidates.$inferSelect;
 export type NewCandidate = typeof candidates.$inferInsert;
 export type JobCandidate = typeof jobCandidates.$inferSelect;
 export type NewJobCandidate = typeof jobCandidates.$inferInsert;
+export type Skill = typeof skills.$inferSelect;
+export type NewSkill = typeof skills.$inferInsert;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type NewEmailTemplate = typeof emailTemplates.$inferInsert;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type NewSystemSetting = typeof systemSettings.$inferInsert;
+export type Organization = typeof organizations.$inferSelect;
+export type NewOrganization = typeof organizations.$inferInsert;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;

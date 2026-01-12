@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createCandidate, updateCandidate } from "@/actions/candidates";
-import { Candidate, NewCandidate } from "@/db/schema";
+import { getAllSkills } from "@/actions/skills";
+import { Candidate, NewCandidate, Skill } from "@/db/schema";
 import { Plus, X, Save, Loader2 } from "lucide-react";
+import { WORLD_LANGUAGES, LANGUAGE_LEVELS, MONTHS, generateYears } from "@/lib/constants";
 
 interface CandidateFormProps {
   candidate?: Candidate;
@@ -17,17 +19,29 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
+  const years = generateYears();
+
+  useEffect(() => {
+    getAllSkills().then(setAvailableSkills);
+  }, []);
 
   const [formData, setFormData] = useState({
-    name: candidate?.name ?? "",
+    firstName: candidate?.firstName ?? "",
+    lastName: candidate?.lastName ?? "",
     email: candidate?.email ?? "",
     phone: candidate?.phone ?? "",
-    location: candidate?.location ?? "",
+    street: candidate?.street ?? "",
+    postalCode: candidate?.postalCode ?? "",
+    city: candidate?.city ?? "",
+    canton: candidate?.canton ?? "",
     linkedinUrl: candidate?.linkedinUrl ?? "",
-    targetRole: candidate?.targetRole ?? "",
     yearsOfExperience: candidate?.yearsOfExperience ?? 0,
-    currentSalary: candidate?.currentSalary ?? 0,
     expectedSalary: candidate?.expectedSalary ?? 0,
+    desiredHourlyRate: candidate?.desiredHourlyRate ?? 0,
+    isSubcontractor: candidate?.isSubcontractor === 1,
+    companyName: candidate?.companyName ?? "",
+    companyType: candidate?.companyType ?? "",
     workloadPreference: candidate?.workloadPreference ?? "100%",
     noticePeriod: candidate?.noticePeriod ?? "",
     availableFrom: candidate?.availableFrom ?? "",
@@ -35,10 +49,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     status: candidate?.status ?? "new",
   });
 
-  const [skills, setSkills] = useState<string[]>(
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(
     (candidate?.skills as string[]) ?? []
   );
-  const [newSkill, setNewSkill] = useState("");
 
   const [certificates, setCertificates] = useState<
     { name: string; issuer: string; date: string }[]
@@ -48,20 +61,48 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     (candidate?.languages as { language: string; level: string }[]) ?? []
   );
 
-  const [education, setEducation] = useState<
-    { degree: string; institution: string; year: string }[]
-  >((candidate?.education as { degree: string; institution: string; year: string }[]) ?? []);
+  const [education, setEducation] = useState<{
+    degree: string;
+    institution: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+  }[]>(
+    (candidate?.education as any)?.map((edu: any) => ({
+      degree: edu.degree || "",
+      institution: edu.institution || "",
+      startMonth: edu.startMonth || "",
+      startYear: edu.startYear || "",
+      endMonth: edu.endMonth || "",
+      endYear: edu.endYear || "",
+    })) ?? []
+  );
 
-  const [experience, setExperience] = useState<
-    { role: string; company: string; from: string; to: string; description: string }[]
-  >(
-    (candidate?.experience as {
-      role: string;
-      company: string;
-      from: string;
-      to: string;
-      description: string;
-    }[]) ?? []
+  const [experience, setExperience] = useState<{
+    role: string;
+    company: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+    current: boolean;
+    description: string;
+  }[]>(
+    (candidate?.experience as any)?.map((exp: any) => ({
+      role: exp.role || "",
+      company: exp.company || "",
+      startMonth: exp.startMonth || "",
+      startYear: exp.startYear || "",
+      endMonth: exp.endMonth || "",
+      endYear: exp.endYear || "",
+      current: exp.current || false,
+      description: exp.description || "",
+    })) ?? []
+  );
+
+  const [highlights, setHighlights] = useState<string[]>(
+    (candidate?.highlights as string[]) ?? []
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,12 +115,15 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       yearsOfExperience: Number(formData.yearsOfExperience) || null,
       currentSalary: Number(formData.currentSalary) || null,
       expectedSalary: Number(formData.expectedSalary) || null,
+      desiredHourlyRate: Number(formData.desiredHourlyRate) || null,
+      isSubcontractor: formData.isSubcontractor ? 1 : 0,
       availableFrom: formData.availableFrom || null,
-      skills,
+      skills: selectedSkills,
       certificates,
       languages,
       education,
       experience,
+      highlights,
     };
 
     const result = candidate
@@ -96,15 +140,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     }
   };
 
-  const addSkill = () => {
-    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-      setSkills([...skills, newSkill.trim()]);
-      setNewSkill("");
-    }
-  };
-
-  const removeSkill = (index: number) => {
-    setSkills(skills.filter((_, i) => i !== index));
+  const toggleSkill = (skillName: string) => {
+    setSelectedSkills(prev =>
+      prev.includes(skillName)
+        ? prev.filter(s => s !== skillName)
+        : [...prev, skillName]
+    );
   };
 
   const addCertificate = () => {
@@ -144,7 +185,10 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
   };
 
   const addEducation = () => {
-    setEducation([...education, { degree: "", institution: "", year: "" }]);
+    setEducation([
+      ...education,
+      { degree: "", institution: "", startMonth: "", startYear: "", endMonth: "", endYear: "" },
+    ]);
   };
 
   const updateEducation = (
@@ -164,22 +208,47 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
   const addExperience = () => {
     setExperience([
       ...experience,
-      { role: "", company: "", from: "", to: "", description: "" },
+      {
+        role: "",
+        company: "",
+        startMonth: "",
+        startYear: "",
+        endMonth: "",
+        endYear: "",
+        current: false,
+        description: "",
+      },
     ]);
   };
 
   const updateExperience = (
     index: number,
     field: keyof (typeof experience)[0],
-    value: string
+    value: string | boolean
   ) => {
     const updated = [...experience];
-    updated[index][field] = value;
+    updated[index][field] = value as any;
     setExperience(updated);
   };
 
   const removeExperience = (index: number) => {
     setExperience(experience.filter((_, i) => i !== index));
+  };
+
+  const addHighlight = () => {
+    if (highlights.length < 4) {
+      setHighlights([...highlights, ""]);
+    }
+  };
+
+  const updateHighlight = (index: number, value: string) => {
+    const updated = [...highlights];
+    updated[index] = value;
+    setHighlights(updated);
+  };
+
+  const removeHighlight = (index: number) => {
+    setHighlights(highlights.filter((_, i) => i !== index));
   };
 
   return (
@@ -191,11 +260,21 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="firstName">Vorname *</Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              required
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="lastName">Nachname *</Label>
+            <Input
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               required
               className="mt-1.5"
             />
@@ -220,16 +299,6 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
             />
           </div>
           <div>
-            <Label htmlFor="location">Standort</Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="z.B. Zürich"
-              className="mt-1.5"
-            />
-          </div>
-          <div className="md:col-span-2">
             <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
             <Input
               id="linkedinUrl"
@@ -240,6 +309,76 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
             />
           </div>
         </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="street">Strasse</Label>
+            <Input
+              id="street"
+              value={formData.street}
+              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+              placeholder="z.B. Bahnhofstrasse 1"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="postalCode">PLZ</Label>
+            <Input
+              id="postalCode"
+              value={formData.postalCode}
+              onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+              placeholder="z.B. 8001"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="city">Ort</Label>
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              placeholder="z.B. Zürich"
+              className="mt-1.5"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="canton">Kanton</Label>
+            <select
+              id="canton"
+              value={formData.canton}
+              onChange={(e) => setFormData({ ...formData, canton: e.target.value })}
+              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+            >
+              <option value="">-- Kanton auswählen --</option>
+              <option value="AG">Aargau</option>
+              <option value="AR">Appenzell Ausserrhoden</option>
+              <option value="AI">Appenzell Innerrhoden</option>
+              <option value="BL">Basel-Landschaft</option>
+              <option value="BS">Basel-Stadt</option>
+              <option value="BE">Bern</option>
+              <option value="FR">Freiburg</option>
+              <option value="GE">Genf</option>
+              <option value="GL">Glarus</option>
+              <option value="GR">Graubünden</option>
+              <option value="JU">Jura</option>
+              <option value="LU">Luzern</option>
+              <option value="NE">Neuenburg</option>
+              <option value="NW">Nidwalden</option>
+              <option value="OW">Obwalden</option>
+              <option value="SH">Schaffhausen</option>
+              <option value="SZ">Schwyz</option>
+              <option value="SO">Solothurn</option>
+              <option value="SG">St. Gallen</option>
+              <option value="TG">Thurgau</option>
+              <option value="TI">Tessin</option>
+              <option value="UR">Uri</option>
+              <option value="VD">Waadt</option>
+              <option value="VS">Wallis</option>
+              <option value="ZG">Zug</option>
+              <option value="ZH">Zürich</option>
+            </select>
+          </div>
+        </div>
       </section>
 
       {/* Professional Info */}
@@ -248,16 +387,6 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
           Berufliche Informationen
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="targetRole">Zielposition</Label>
-            <Input
-              id="targetRole"
-              value={formData.targetRole}
-              onChange={(e) => setFormData({ ...formData, targetRole: e.target.value })}
-              placeholder="z.B. Senior React Developer"
-              className="mt-1.5"
-            />
-          </div>
           <div>
             <Label htmlFor="yearsOfExperience">Jahre Erfahrung</Label>
             <Input
@@ -272,19 +401,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
             />
           </div>
           <div>
-            <Label htmlFor="currentSalary">Aktuelles Gehalt (CHF/Jahr)</Label>
-            <Input
-              id="currentSalary"
-              type="number"
-              value={formData.currentSalary}
-              onChange={(e) =>
-                setFormData({ ...formData, currentSalary: parseInt(e.target.value) || 0 })
-              }
-              className="mt-1.5"
-            />
-          </div>
-          <div>
-            <Label htmlFor="expectedSalary">Gehaltsvorstellung (CHF/Jahr)</Label>
+            <Label htmlFor="expectedSalary">Gehaltsvorstellung Brutto (CHF/Jahr)</Label>
             <Input
               id="expectedSalary"
               type="number"
@@ -295,6 +412,60 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               className="mt-1.5"
             />
           </div>
+          <div>
+            <Label htmlFor="desiredHourlyRate">Gewünschter Stundensatz All-in (CHF/h)</Label>
+            <Input
+              id="desiredHourlyRate"
+              type="number"
+              value={formData.desiredHourlyRate}
+              onChange={(e) =>
+                setFormData({ ...formData, desiredHourlyRate: parseInt(e.target.value) || 0 })
+              }
+              className="mt-1.5"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="isSubcontractor"
+                checked={formData.isSubcontractor}
+                onChange={(e) => setFormData({ ...formData, isSubcontractor: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+              />
+              <Label htmlFor="isSubcontractor" className="cursor-pointer">
+                Ist Subunternehmer
+              </Label>
+            </div>
+          </div>
+          {formData.isSubcontractor && (
+            <>
+              <div>
+                <Label htmlFor="companyName">Name Unternehmen</Label>
+                <Input
+                  id="companyName"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  placeholder="z.B. XY Solutions GmbH"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="companyType">Rechtsform</Label>
+                <select
+                  id="companyType"
+                  value={formData.companyType}
+                  onChange={(e) => setFormData({ ...formData, companyType: e.target.value })}
+                  className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                >
+                  <option value="">-- Rechtsform auswählen --</option>
+                  <option value="ag">AG</option>
+                  <option value="gmbh">GmbH</option>
+                  <option value="einzelunternehmen">Einzelunternehmen</option>
+                </select>
+              </div>
+            </>
+          )}
           <div>
             <Label htmlFor="workloadPreference">Pensum</Label>
             <select
@@ -359,34 +530,27 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
           Skills
         </h2>
-        <div className="flex gap-2 mb-4">
-          <Input
-            value={newSkill}
-            onChange={(e) => setNewSkill(e.target.value)}
-            placeholder="Skill hinzufügen..."
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
-          />
-          <Button type="button" onClick={addSkill} variant="outline">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
         <div className="flex flex-wrap gap-2">
-          {skills.map((skill, i) => (
-            <span
-              key={i}
-              className="flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+          {availableSkills.map((skill) => (
+            <button
+              key={skill.id}
+              type="button"
+              onClick={() => toggleSkill(skill.name)}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition-all ${
+                selectedSkills.includes(skill.name)
+                  ? "bg-amber-500 text-black"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+              }`}
             >
-              {skill}
-              <button
-                type="button"
-                onClick={() => removeSkill(i)}
-                className="ml-1 hover:text-red-600"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
+              {skill.name}
+            </button>
           ))}
         </div>
+        {availableSkills.length === 0 && (
+          <p className="text-sm text-slate-500">
+            Keine Skills verfügbar. Bitte fügen Sie Skills in den Einstellungen hinzu.
+          </p>
+        )}
       </section>
 
       {/* Languages */}
@@ -402,30 +566,34 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         <div className="space-y-3">
           {languages.map((lang, i) => (
             <div key={i} className="flex items-center gap-3">
-              <Input
+              <select
                 value={lang.language}
                 onChange={(e) => updateLanguage(i, "language", e.target.value)}
-                placeholder="Sprache"
-                className="flex-1"
-              />
+                className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              >
+                <option value="">-- Sprache auswählen --</option>
+                {WORLD_LANGUAGES.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
               <select
                 value={lang.level}
                 onChange={(e) => updateLanguage(i, "level", e.target.value)}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                className="w-48 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
               >
-                <option value="A1">A1 - Anfänger</option>
-                <option value="A2">A2 - Grundkenntnisse</option>
-                <option value="B1">B1 - Mittelstufe</option>
-                <option value="B2">B2 - Gute Mittelstufe</option>
-                <option value="C1">C1 - Fortgeschritten</option>
-                <option value="C2">C2 - Muttersprachlich</option>
-                <option value="Muttersprache">Muttersprache</option>
+                {LANGUAGE_LEVELS.map((level) => (
+                  <option key={level.value} value={level.value}>
+                    {level.label}
+                  </option>
+                ))}
               </select>
               <Button
                 type="button"
                 onClick={() => removeLanguage(i)}
                 variant="ghost"
-                size="icon-sm"
+                size="sm"
                 className="text-red-500"
               >
                 <X className="h-4 w-4" />
@@ -469,7 +637,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                 type="button"
                 onClick={() => removeCertificate(i)}
                 variant="ghost"
-                size="icon-sm"
+                size="sm"
                 className="text-red-500"
               >
                 <X className="h-4 w-4" />
@@ -491,29 +659,88 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </div>
         <div className="space-y-4">
           {education.map((edu, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg dark:bg-slate-800">
-              <div className="flex-1 grid gap-3 md:grid-cols-3">
-                <Input
-                  value={edu.degree}
-                  onChange={(e) => updateEducation(i, "degree", e.target.value)}
-                  placeholder="Abschluss / Titel"
-                />
-                <Input
-                  value={edu.institution}
-                  onChange={(e) => updateEducation(i, "institution", e.target.value)}
-                  placeholder="Institution"
-                />
-                <Input
-                  value={edu.year}
-                  onChange={(e) => updateEducation(i, "year", e.target.value)}
-                  placeholder="Jahr"
-                />
+            <div key={i} className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg dark:bg-slate-800">
+              <div className="flex-1 space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Input
+                    value={edu.degree}
+                    onChange={(e) => updateEducation(i, "degree", e.target.value)}
+                    placeholder="Abschluss / Titel"
+                  />
+                  <Input
+                    value={edu.institution}
+                    onChange={(e) => updateEducation(i, "institution", e.target.value)}
+                    placeholder="Institution"
+                  />
+                </div>
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div>
+                    <Label className="text-xs text-slate-500">Von Monat</Label>
+                    <select
+                      value={edu.startMonth}
+                      onChange={(e) => updateEducation(i, "startMonth", e.target.value)}
+                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <option value="">--</option>
+                      {MONTHS.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-500">Von Jahr</Label>
+                    <select
+                      value={edu.startYear}
+                      onChange={(e) => updateEducation(i, "startYear", e.target.value)}
+                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <option value="">--</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-500">Bis Monat</Label>
+                    <select
+                      value={edu.endMonth}
+                      onChange={(e) => updateEducation(i, "endMonth", e.target.value)}
+                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <option value="">--</option>
+                      {MONTHS.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-500">Bis Jahr</Label>
+                    <select
+                      value={edu.endYear}
+                      onChange={(e) => updateEducation(i, "endYear", e.target.value)}
+                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <option value="">--</option>
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
               <Button
                 type="button"
                 onClick={() => removeEducation(i)}
                 variant="ghost"
-                size="icon-sm"
+                size="sm"
                 className="text-red-500"
               >
                 <X className="h-4 w-4" />
@@ -548,26 +775,94 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                     onChange={(e) => updateExperience(i, "company", e.target.value)}
                     placeholder="Unternehmen"
                   />
-                  <Input
-                    value={exp.from}
-                    onChange={(e) => updateExperience(i, "from", e.target.value)}
-                    placeholder="Von (z.B. 01/2020)"
-                  />
-                  <Input
-                    value={exp.to}
-                    onChange={(e) => updateExperience(i, "to", e.target.value)}
-                    placeholder="Bis (z.B. 12/2023 oder Heute)"
-                  />
                 </div>
                 <Button
                   type="button"
                   onClick={() => removeExperience(i)}
                   variant="ghost"
-                  size="icon-sm"
+                  size="sm"
                   className="text-red-500 ml-3"
                 >
                   <X className="h-4 w-4" />
                 </Button>
+              </div>
+              <div className="grid gap-3 md:grid-cols-5">
+                <div>
+                  <Label className="text-xs text-slate-500">Von Monat</Label>
+                  <select
+                    value={exp.startMonth}
+                    onChange={(e) => updateExperience(i, "startMonth", e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <option value="">--</option>
+                    {MONTHS.map((month) => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">Von Jahr</Label>
+                  <select
+                    value={exp.startYear}
+                    onChange={(e) => updateExperience(i, "startYear", e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <option value="">--</option>
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">Bis Monat</Label>
+                  <select
+                    value={exp.endMonth}
+                    onChange={(e) => updateExperience(i, "endMonth", e.target.value)}
+                    disabled={exp.current}
+                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900 disabled:opacity-50"
+                  >
+                    <option value="">--</option>
+                    {MONTHS.map((month) => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">Bis Jahr</Label>
+                  <select
+                    value={exp.endYear}
+                    onChange={(e) => updateExperience(i, "endYear", e.target.value)}
+                    disabled={exp.current}
+                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900 disabled:opacity-50"
+                  >
+                    <option value="">--</option>
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`current-${i}`}
+                      checked={exp.current}
+                      onChange={(e) => updateExperience(i, "current", e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                    />
+                    <Label htmlFor={`current-${i}`} className="text-sm cursor-pointer">
+                      Aktuell
+                    </Label>
+                  </div>
+                </div>
               </div>
               <textarea
                 value={exp.description}
@@ -578,6 +873,59 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               />
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Highlights */}
+      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Highlights
+          </h2>
+          <Button 
+            type="button" 
+            onClick={addHighlight} 
+            variant="outline" 
+            size="sm"
+            disabled={highlights.length >= 4}
+          >
+            <Plus className="h-4 w-4 mr-1" /> Hinzufügen
+          </Button>
+        </div>
+        {highlights.length >= 4 && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+            Maximal 4 Highlights erlaubt
+          </p>
+        )}
+        <div className="space-y-3">
+          {highlights.map((highlight, i) => (
+            <div key={i} className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg dark:bg-slate-800">
+              <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-black text-xs font-semibold mt-1">
+                {i + 1}
+              </div>
+              <textarea
+                value={highlight}
+                onChange={(e) => updateHighlight(i, e.target.value)}
+                placeholder="Bulletsatz / Highlight eingeben (min. 200 Wörter empfohlen)..."
+                rows={4}
+                className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 resize-y"
+              />
+              <Button
+                type="button"
+                onClick={() => removeHighlight(i)}
+                variant="ghost"
+                size="sm"
+                className="text-red-500 flex-shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          {highlights.length === 0 && (
+            <p className="text-sm text-slate-500 text-center py-4">
+              Keine Highlights hinzugefügt. Klicken Sie auf "Hinzufügen", um ein Highlight zu erstellen.
+            </p>
+          )}
         </div>
       </section>
 
@@ -626,4 +974,3 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     </form>
   );
 }
-

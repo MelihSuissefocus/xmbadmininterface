@@ -174,16 +174,12 @@ export default async function DashboardPage() {
                       className="flex items-center gap-3 rounded-lg bg-slate-50 p-4 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                     >
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-amber-400">
-                        {candidate.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)}
+                        {candidate.firstName[0]}{candidate.lastName[0]}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <p className="font-medium text-slate-900 dark:text-white">
-                            {candidate.name}
+                            {candidate.firstName} {candidate.lastName}
                           </p>
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-medium ${

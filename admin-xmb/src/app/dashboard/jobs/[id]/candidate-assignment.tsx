@@ -112,7 +112,7 @@ export function CandidateAssignment({
             <option value="">-- Auswählen --</option>
             {availableCandidates.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} {c.targetRole ? `(${c.targetRole})` : ""}
+                {c.firstName} {c.lastName} {c.targetRole ? `(${c.targetRole})` : ""}
               </option>
             ))}
           </select>
@@ -153,15 +153,11 @@ export function CandidateAssignment({
                     className="flex items-center gap-3 hover:opacity-80"
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-amber-400">
-                      {candidate.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .slice(0, 2)}
+                      {candidate.firstName[0]}{candidate.lastName[0]}
                     </div>
                     <div>
                       <p className="font-medium text-slate-900 dark:text-white">
-                        {candidate.name}
+                        {candidate.firstName} {candidate.lastName}
                       </p>
                       {candidate.targetRole && (
                         <p className="text-sm text-slate-500">{candidate.targetRole}</p>
@@ -169,7 +165,7 @@ export function CandidateAssignment({
                     </div>
                   </Link>
                   <button
-                    onClick={() => handleRemove(candidate.id, candidate.name)}
+                    onClick={() => handleRemove(candidate.id, `${candidate.firstName} ${candidate.lastName}`)}
                     className="text-slate-400 hover:text-red-500 p-1"
                     title="Entfernen"
                   >

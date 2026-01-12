@@ -62,16 +62,12 @@ export default async function CandidateDetailPage({
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-2xl font-semibold text-amber-400">
-            {candidate.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)}
+            {candidate.firstName[0]}{candidate.lastName[0]}
           </div>
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                {candidate.name}
+                {candidate.firstName} {candidate.lastName}
               </h1>
               <span
                 className={`rounded-full px-3 py-1 text-sm font-medium ${
@@ -123,10 +119,19 @@ export default async function CandidateDetailPage({
                   <span>{candidate.phone}</span>
                 </a>
               )}
-              {candidate.location && (
-                <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                  <MapPin className="h-5 w-5" />
-                  <span>{candidate.location}</span>
+              {(candidate.street || candidate.city || candidate.postalCode || candidate.canton) && (
+                <div className="flex items-start gap-3 text-slate-600 dark:text-slate-400">
+                  <MapPin className="h-5 w-5 mt-0.5" />
+                  <div className="flex flex-col">
+                    {candidate.street && <span>{candidate.street}</span>}
+                    {(candidate.postalCode || candidate.city) && (
+                      <span>
+                        {candidate.postalCode && `${candidate.postalCode} `}
+                        {candidate.city}
+                      </span>
+                    )}
+                    {candidate.canton && <span>{candidate.canton}</span>}
+                  </div>
                 </div>
               )}
               {candidate.linkedinUrl && (

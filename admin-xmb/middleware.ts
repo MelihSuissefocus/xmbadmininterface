@@ -7,12 +7,13 @@ export default auth((req) => {
   const isOnDashboard = pathname.startsWith("/dashboard");
   const isOnLogin = pathname === "/login";
   const isOnRoot = pathname === "/";
+  const isOnPasswordReset = pathname === "/forgot-password" || pathname === "/reset-password";
 
   if (isOnDashboard && !isLoggedIn) {
     return Response.redirect(new URL("/login", req.nextUrl));
   }
 
-  if ((isOnLogin || isOnRoot) && isLoggedIn) {
+  if ((isOnLogin || isOnRoot) && isLoggedIn && !isOnPasswordReset) {
     return Response.redirect(new URL("/dashboard", req.nextUrl));
   }
 });

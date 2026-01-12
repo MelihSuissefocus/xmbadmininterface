@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { loginAction } from "@/actions/auth";
 
 function generateCaptcha() {
@@ -153,6 +154,15 @@ export default function LoginPage() {
           >
             {loading ? "Anmelden..." : isLocked ? "Konto gesperrt" : "Anmelden"}
           </button>
+
+          <div className="text-center mt-4">
+            <Link 
+              href="/forgot-password"
+              className="text-sm text-zinc-400 hover:text-amber-500 transition-colors"
+            >
+              Passwort vergessen?
+            </Link>
+          </div>
         </form>
       </div>
     </div>
