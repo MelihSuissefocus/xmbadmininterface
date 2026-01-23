@@ -2,6 +2,7 @@ import { getAllUsers } from "@/actions/users";
 import { auth } from "@/auth";
 import { UsersList } from "./users-list";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {

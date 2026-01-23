@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 
+export const runtime = "nodejs";
+
 export default async function DashboardLayout({
   children,
 }: {
