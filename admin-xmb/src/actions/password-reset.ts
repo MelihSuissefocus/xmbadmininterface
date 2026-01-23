@@ -12,7 +12,17 @@ interface ActionResult {
   data?: unknown;
 }
 
-export async function createPasswordResetToken(email: string): Promise<ActionResult> {
+interface CreatePasswordResetResult {
+  success: boolean;
+  message: string;
+  data?: {
+    token: string;
+    email: string | null;
+    name: string | null;
+  };
+}
+
+export async function createPasswordResetToken(email: string): Promise<CreatePasswordResetResult> {
   try {
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
