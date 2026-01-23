@@ -169,12 +169,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
   const updateCertificate = (
     index: number,
-    field: keyof (typeof certificates)[0],
+    field: string,
     value: string
   ) => {
-    const updated = [...certificates];
-    updated[index][field] = value;
-    setCertificates(updated);
+    setCertificates(prev => prev.map((cert, i) => 
+      i === index ? { ...cert, [field]: value } : cert
+    ));
   };
 
   const removeCertificate = (index: number) => {
@@ -187,12 +187,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
   const updateLanguage = (
     index: number,
-    field: keyof (typeof languages)[0],
+    field: string,
     value: string
   ) => {
-    const updated = [...languages];
-    updated[index][field] = value;
-    setLanguages(updated);
+    setLanguages(prev => prev.map((lang, i) => 
+      i === index ? { ...lang, [field]: value } : lang
+    ));
   };
 
   const removeLanguage = (index: number) => {
@@ -208,12 +208,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
   const updateEducation = (
     index: number,
-    field: keyof (typeof education)[0],
+    field: string,
     value: string
   ) => {
-    const updated = [...education];
-    updated[index][field] = value;
-    setEducation(updated);
+    setEducation(prev => prev.map((edu, i) => 
+      i === index ? { ...edu, [field]: value } : edu
+    ));
   };
 
   const removeEducation = (index: number) => {
@@ -238,12 +238,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
   const updateExperience = (
     index: number,
-    field: keyof (typeof experience)[0],
+    field: string,
     value: string | boolean
   ) => {
-    const updated = [...experience];
-    updated[index][field] = value as any;
-    setExperience(updated);
+    setExperience(prev => prev.map((exp, i) => 
+      i === index ? { ...exp, [field]: value } : exp
+    ));
   };
 
   const removeExperience = (index: number) => {
