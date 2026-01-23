@@ -36,7 +36,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     city: candidate?.city ?? "",
     canton: candidate?.canton ?? "",
     linkedinUrl: candidate?.linkedinUrl ?? "",
+    targetRole: candidate?.targetRole ?? "",
     yearsOfExperience: candidate?.yearsOfExperience ?? 0,
+    currentSalary: candidate?.currentSalary ?? 0,
     expectedSalary: candidate?.expectedSalary ?? 0,
     desiredHourlyRate: candidate?.desiredHourlyRate ?? 0,
     isSubcontractor: candidate?.isSubcontractor === 1,
@@ -112,12 +114,25 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
     const data: NewCandidate = {
       ...formData,
+      companyType: (formData.companyType || null) as "ag" | "gmbh" | "einzelunternehmen" | null,
       yearsOfExperience: Number(formData.yearsOfExperience) || null,
       currentSalary: Number(formData.currentSalary) || null,
       expectedSalary: Number(formData.expectedSalary) || null,
       desiredHourlyRate: Number(formData.desiredHourlyRate) || null,
       isSubcontractor: formData.isSubcontractor ? 1 : 0,
       availableFrom: formData.availableFrom || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      street: formData.street || null,
+      postalCode: formData.postalCode || null,
+      city: formData.city || null,
+      canton: formData.canton || null,
+      linkedinUrl: formData.linkedinUrl || null,
+      targetRole: formData.targetRole || null,
+      companyName: formData.companyName || null,
+      workloadPreference: formData.workloadPreference || null,
+      noticePeriod: formData.noticePeriod || null,
+      notes: formData.notes || null,
       skills: selectedSkills,
       certificates,
       languages,
@@ -308,6 +323,16 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               className="mt-1.5"
             />
           </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="targetRole">Zielposition</Label>
+            <Input
+              id="targetRole"
+              value={formData.targetRole}
+              onChange={(e) => setFormData({ ...formData, targetRole: e.target.value })}
+              placeholder="z.B. Senior Software Engineer"
+              className="mt-1.5"
+            />
+          </div>
         </div>
         
         <div className="grid gap-4 md:grid-cols-2 mt-4">
@@ -396,6 +421,18 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               value={formData.yearsOfExperience}
               onChange={(e) =>
                 setFormData({ ...formData, yearsOfExperience: parseInt(e.target.value) || 0 })
+              }
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="currentSalary">Aktuelles Gehalt Brutto (CHF/Jahr)</Label>
+            <Input
+              id="currentSalary"
+              type="number"
+              value={formData.currentSalary}
+              onChange={(e) =>
+                setFormData({ ...formData, currentSalary: parseInt(e.target.value) || 0 })
               }
               className="mt-1.5"
             />
