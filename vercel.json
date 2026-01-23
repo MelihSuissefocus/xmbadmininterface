@@ -1,8 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd admin-xmb && npm run build",
-  "devCommand": "cd admin-xmb && npm run dev",
-  "installCommand": "cd admin-xmb && npm install",
-  "outputDirectory": "admin-xmb/.next"
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "rootDirectory": "admin-xmb"
 }
+
+
+
 
