@@ -1,19 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
-export async function middleware(request: NextRequest) {
-  const token = await getToken({ 
-    req: request,
-    secret: process.env.AUTH_SECRET 
-  });
-  
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isLoggedIn = !!token;
+  
+  // Check for session cookie (authjs.session-token or __Secure-authjs.session-token)
+  const sessionToken = request.cookies.get("authjs.session-token")?.value 
+    || request.cookies.get("__Secure-authjs.session-token")?.value;
+  
+  const isLoggedIn = !!sessionToken;
 
   const isOnDashboard = pathname.startsWith("/dashboard");
   const isOnLogin = pathname === "/login";
   const isOnRoot = pathname === "/";
+  const isOnPasswordReset = pathname === "/forgot-password" || pathname === "/reset-password";
+
+  // Allow password reset pages
+  if (isOnPasswordReset) {
+    return NextResponse.next();
+  }
 
   if (isOnDashboard && !isLoggedIn) {
     return NextResponse.redirect(new URL("/login", request.url));
