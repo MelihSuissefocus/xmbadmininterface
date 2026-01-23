@@ -47,12 +47,15 @@ export default async function CandidateDetailPage({
   const skills = (candidate.skills as string[]) ?? [];
   const certificates = (candidate.certificates as { name: string; issuer: string; date: string }[]) ?? [];
   const languages = (candidate.languages as { language: string; level: string }[]) ?? [];
-  const education = (candidate.education as { degree: string; institution: string; year: string }[]) ?? [];
+  const education = (candidate.education as { degree: string; institution: string; startMonth: string; startYear: string; endMonth: string; endYear: string }[]) ?? [];
   const experience = (candidate.experience as {
     role: string;
     company: string;
-    from: string;
-    to: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+    current: boolean;
     description: string;
   }[]) ?? [];
 
@@ -266,7 +269,7 @@ export default async function CandidateDetailPage({
                       </h3>
                       <p className="text-slate-600 dark:text-slate-400">{exp.company}</p>
                       <p className="text-sm text-slate-500 mt-1">
-                        {exp.from} – {exp.to}
+                        {exp.startMonth} {exp.startYear} – {exp.current ? "Heute" : `${exp.endMonth} ${exp.endYear}`}
                       </p>
                       {exp.description && (
                         <p className="mt-2 text-slate-600 dark:text-slate-400">
@@ -294,7 +297,7 @@ export default async function CandidateDetailPage({
                       {edu.degree}
                     </h3>
                     <p className="text-slate-600 dark:text-slate-400">{edu.institution}</p>
-                    <p className="text-sm text-slate-500">{edu.year}</p>
+                    <p className="text-sm text-slate-500">{edu.startMonth} {edu.startYear} – {edu.endMonth} {edu.endYear}</p>
                   </div>
                 ))}
               </div>
