@@ -1,6 +1,6 @@
 import "server-only";
 
-import OpenAI from "openai";
+import { AzureOpenAI } from "openai";
 import { z } from "zod";
 import { cvLogger } from "./logger";
 import type { PackedCvInput } from "./cv-pack";
@@ -33,14 +33,32 @@ export class LlmExtractionError extends Error {
 }
 
 function getConfig(): AzureOpenAIConfig | null {
+  const rawEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
+  const rawKey = process.env.AZURE_OPENAI_KEY;
+  const rawDeployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+  const rawApiVersion = process.env.AZURE_OPENAI_API_VERSION;
+
+  cvLogger.debug("Azure OpenAI env check", {
+    action: "getConfig",
+    hasEndpoint: !!rawEndpoint,
+    endpointPreview: rawEndpoint ? rawEndpoint.substring(0, 30) + "..." : "missing",
+    hasKey: !!rawKey,
+    deployment: rawDeployment || "missing",
+    apiVersion: rawApiVersion || "default",
+  });
+
   const env = configSchema.safeParse({
-    AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT,
-    AZURE_OPENAI_KEY: process.env.AZURE_OPENAI_KEY,
-    AZURE_OPENAI_DEPLOYMENT: process.env.AZURE_OPENAI_DEPLOYMENT,
-    AZURE_OPENAI_API_VERSION: process.env.AZURE_OPENAI_API_VERSION || "2024-08-01-preview",
+    AZURE_OPENAI_ENDPOINT: rawEndpoint,
+    AZURE_OPENAI_KEY: rawKey,
+    AZURE_OPENAI_DEPLOYMENT: rawDeployment,
+    AZURE_OPENAI_API_VERSION: rawApiVersion || "2024-08-01-preview",
   });
 
   if (!env.success) {
+    cvLogger.warn("Azure OpenAI config validation failed", {
+      action: "getConfig",
+      errors: env.error.issues.map((i) => i.path.join(".")).join(", "),
+    });
     return null;
   }
 
@@ -52,21 +70,21 @@ function getConfig(): AzureOpenAIConfig | null {
   };
 }
 
-let clientInstance: OpenAI | null = null;
+let clientInstance: AzureOpenAI | null = null;
 let currentConfig: AzureOpenAIConfig | null = null;
 
-function getClient(): OpenAI | null {
+function getClient(): AzureOpenAI | null {
   const config = getConfig();
   if (!config) {
     return null;
   }
 
   if (!clientInstance || currentConfig?.endpoint !== config.endpoint) {
-    clientInstance = new OpenAI({
+    clientInstance = new AzureOpenAI({
+      endpoint: config.endpoint,
       apiKey: config.apiKey,
-      baseURL: `${config.endpoint}/openai/deployments/${config.deployment}`,
-      defaultQuery: { "api-version": config.apiVersion },
-      defaultHeaders: { "api-key": config.apiKey },
+      apiVersion: config.apiVersion,
+      deployment: config.deployment,
     });
     currentConfig = config;
   }
@@ -138,6 +156,8 @@ export async function extractCandidateFieldsWithLLM(
     action: "extractCandidateFieldsWithLLM",
     inputTokensEst: packedInput.estimated_tokens,
     sectionsCount: packedInput.sections.length,
+    deploymentName: config.deployment,
+    endpointHost: new URL(config.endpoint).hostname,
   });
 
   let lastError: Error | null = null;
@@ -155,7 +175,7 @@ export async function extractCandidateFieldsWithLLM(
 
       const response = await client.chat.completions.create(
         {
-          model: config.deployment,
+          model: "", // deployment is set at client level for AzureOpenAI
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
