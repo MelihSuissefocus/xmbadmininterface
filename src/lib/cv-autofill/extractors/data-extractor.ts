@@ -14,7 +14,6 @@ import {
   normalizeLanguageName,
   normalizeLanguageLevel,
   normalizeCanton,
-  matchSkillToSystem,
 } from "../field-mapper";
 
 /**

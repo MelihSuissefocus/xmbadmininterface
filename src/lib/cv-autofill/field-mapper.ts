@@ -3,10 +3,9 @@
  * Maps extracted CV data to candidate form fields
  */
 
-import { LANGUAGE_LEVELS, MONTHS, CANTON_MAPPING, WORLD_LANGUAGES } from "@/lib/constants";
+import { CANTON_MAPPING, WORLD_LANGUAGES } from "@/lib/constants";
 import type {
   ExperienceEntry,
-  LanguageEntry,
   SuggestedTarget,
   ConfidenceLevel,
 } from "./types";
@@ -20,7 +19,7 @@ export interface MappingResult {
 /**
  * Maps a label/value pair to a candidate form field
  */
-export function mapToFormField(label: string, value: string): MappingResult {
+export function mapToFormField(label: string, _value: string): MappingResult {
   const normalizedLabel = label.toLowerCase().trim();
 
   // Direct mappings with high confidence

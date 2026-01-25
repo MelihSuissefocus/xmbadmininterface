@@ -2,14 +2,14 @@
 
 /**
  * CV Upload Action
- * Handles file upload with validation (stub implementation)
+ * Handles file upload with validation and buffer conversion
  */
 
 import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
 
 export interface UploadResult {
   success: boolean;
-  fileUrl?: string;
+  buffer?: Buffer;
   fileName?: string;
   fileType?: string;
   fileSize?: number;
@@ -63,13 +63,13 @@ export async function uploadCV(formData: FormData): Promise<UploadResult> {
       };
     }
 
-    // TODO: In production, upload to Vercel Blob Storage or S3
-    // For now, just return mock data
-    const mockFileUrl = `temp://${file.name}`;
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     return {
       success: true,
-      fileUrl: mockFileUrl,
+      buffer,
       fileName: file.name,
       fileType: fileExtension,
       fileSize: file.size,

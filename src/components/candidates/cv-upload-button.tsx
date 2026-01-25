@@ -51,7 +51,7 @@ export function CVUploadButton({
 
       // Step 2: Extract data from file
       const draft = await extractFromCV(
-        uploadResult.fileUrl!,
+        uploadResult.buffer!,
         uploadResult.fileName!,
         uploadResult.fileType!,
         uploadResult.fileSize!
