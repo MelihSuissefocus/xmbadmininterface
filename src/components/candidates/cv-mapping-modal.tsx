@@ -1,12 +1,7 @@
 "use client";
 
-/**
- * CV Mapping Modal Component
- * Displays extracted CV data for review and mapping before applying to form
- */
-
 import { useState } from "react";
-import { X, CheckCircle2, AlertCircle, HelpCircle, FileText } from "lucide-react";
+import { X, CheckCircle2, AlertCircle, HelpCircle, FileText, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +15,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import type {
-  CandidateAutoFillDraft,
-  CandidateFormData,
-  AmbiguousField,
-  UnmappedItem,
-} from "@/lib/cv-autofill/types";
+  CandidateAutoFillDraftV2,
+  ExtractedFieldWithEvidence,
+} from "@/lib/azure-di/types";
+import type { CandidateFormData } from "@/lib/cv-autofill/types";
 
 export interface CVMappingModalProps {
-  draft: CandidateAutoFillDraft | null;
+  draft: CandidateAutoFillDraftV2 | null;
   onConfirm: (mappedData: Partial<CandidateFormData>) => void;
   onCancel: () => void;
   isOpen: boolean;
@@ -40,42 +34,39 @@ export function CVMappingModal({
   isOpen,
 }: CVMappingModalProps) {
   const [ambiguousSelections, setAmbiguousSelections] = useState<Record<number, string | null>>({});
-  const [unmappedSelections, setUnmappedSelections] = useState<Record<number, string | null>>({});
+  const [expandedEvidence, setExpandedEvidence] = useState<Set<number>>(new Set());
 
   if (!draft) return null;
 
-  const { filledFields, ambiguousFields, unmappedItems, metadata } = draft;
+  const { filledFields, ambiguousFields, unmappedItems, metadata, extractionVersion, provider } = draft;
 
   const handleAmbiguousChange = (index: number, value: string | null) => {
     setAmbiguousSelections(prev => ({ ...prev, [index]: value }));
   };
 
-  const handleUnmappedChange = (index: number, value: string | null) => {
-    setUnmappedSelections(prev => ({ ...prev, [index]: value }));
+  const toggleEvidence = (index: number) => {
+    setExpandedEvidence(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
   };
 
   const handleConfirm = () => {
-    // Build the mapped data from filled fields, ambiguous selections, and unmapped selections
     const mappedData: Partial<CandidateFormData> = {};
 
-    // Add filled fields
     for (const field of filledFields) {
       setNestedValue(mappedData, field.targetField, field.extractedValue);
     }
 
-    // Add ambiguous field selections
     ambiguousFields.forEach((field, index) => {
       const selectedTarget = ambiguousSelections[index];
       if (selectedTarget && selectedTarget !== "ignore") {
         setNestedValue(mappedData, selectedTarget, field.extractedValue);
-      }
-    });
-
-    // Add unmapped item selections
-    unmappedItems.forEach((item, index) => {
-      const selectedTarget = unmappedSelections[index];
-      if (selectedTarget && selectedTarget !== "ignore") {
-        setNestedValue(mappedData, selectedTarget, item.extractedValue);
       }
     });
 
@@ -84,7 +75,7 @@ export function CVMappingModal({
 
   const handleClose = () => {
     setAmbiguousSelections({});
-    setUnmappedSelections({});
+    setExpandedEvidence(new Set());
     onCancel();
   };
 
@@ -101,19 +92,21 @@ export function CVMappingModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Metadata */}
-        <div className="flex gap-2 text-sm text-muted-foreground">
+        <div className="flex gap-2 text-sm text-muted-foreground flex-wrap">
           <span>{metadata.fileName}</span>
           <span>•</span>
           <span>{(metadata.fileSize / 1024).toFixed(0)} KB</span>
           <span>•</span>
-          <span>{metadata.extractionMethod === "ocr" ? "OCR" : "Text"}</span>
+          <span>{metadata.pageCount} Seiten</span>
           <span>•</span>
           <span>{(metadata.processingTimeMs / 1000).toFixed(1)}s</span>
+          <span>•</span>
+          <Badge variant="outline" className="text-xs">
+            {provider} v{extractionVersion}
+          </Badge>
         </div>
 
         <ScrollArea className="h-[50vh]">
-          {/* Filled Fields */}
           {filledFields.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -122,24 +115,13 @@ export function CVMappingModal({
               </h3>
               <div className="space-y-2">
                 {filledFields.map((field, index) => (
-                  <div
+                  <FilledFieldRow
                     key={index}
-                    className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{field.targetField}</div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {String(field.extractedValue)}
-                        </div>
-                      </div>
-                      <Badge
-                        variant={field.confidence === "high" ? "default" : field.confidence === "medium" ? "secondary" : "outline"}
-                      >
-                        {field.confidence}
-                      </Badge>
-                    </div>
-                  </div>
+                    field={field}
+                    index={index}
+                    isExpanded={expandedEvidence.has(index)}
+                    onToggleEvidence={() => toggleEvidence(index)}
+                  />
                 ))}
               </div>
             </div>
@@ -149,7 +131,6 @@ export function CVMappingModal({
             <Separator className="my-4" />
           )}
 
-          {/* Ambiguous Fields */}
           {ambiguousFields.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -158,12 +139,30 @@ export function CVMappingModal({
               </h3>
               <div className="space-y-3">
                 {ambiguousFields.map((field, index) => (
-                  <AmbiguousFieldRow
+                  <div
                     key={index}
-                    field={field}
-                    selectedTarget={ambiguousSelections[index]}
-                    onChange={(value) => handleAmbiguousChange(index, value)}
-                  />
+                    className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-900"
+                  >
+                    <div className="mb-2">
+                      <div className="text-sm font-medium">{field.extractedLabel}</div>
+                      <div className="text-sm text-muted-foreground">{field.extractedValue}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Seite {field.evidence.page} • Konfidenz: {(field.evidence.confidence * 100).toFixed(0)}%
+                      </div>
+                    </div>
+                    <select
+                      className="w-full mt-2 p-2 border rounded text-sm"
+                      value={ambiguousSelections[index] || field.suggestedTargets[0]?.targetField || ""}
+                      onChange={(e) => handleAmbiguousChange(index, e.target.value)}
+                    >
+                      {field.suggestedTargets.map((target, idx) => (
+                        <option key={idx} value={target.targetField}>
+                          {target.targetField} ({target.confidence}) - {target.reason}
+                        </option>
+                      ))}
+                      <option value="ignore">Ignorieren</option>
+                    </select>
+                  </div>
                 ))}
               </div>
             </div>
@@ -173,7 +172,6 @@ export function CVMappingModal({
             <Separator className="my-4" />
           )}
 
-          {/* Unmapped Items */}
           {unmappedItems.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -182,12 +180,20 @@ export function CVMappingModal({
               </h3>
               <div className="space-y-3">
                 {unmappedItems.map((item, index) => (
-                  <UnmappedItemRow
+                  <div
                     key={index}
-                    item={item}
-                    selectedTarget={unmappedSelections[index]}
-                    onChange={(value) => handleUnmappedChange(index, value)}
-                  />
+                    className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800"
+                  >
+                    <div className="mb-2">
+                      {item.extractedLabel && (
+                        <div className="text-sm font-medium">{item.extractedLabel}</div>
+                      )}
+                      <div className="text-sm text-muted-foreground">{item.extractedValue}</div>
+                      {item.category && (
+                        <Badge variant="outline" className="mt-1">{item.category}</Badge>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -215,81 +221,65 @@ export function CVMappingModal({
   );
 }
 
-// Helper component for ambiguous fields
-function AmbiguousFieldRow({
+function FilledFieldRow({
   field,
-  selectedTarget,
-  onChange,
+  isExpanded,
+  onToggleEvidence,
 }: {
-  field: AmbiguousField;
-  selectedTarget: string | null | undefined;
-  onChange: (value: string | null) => void;
+  field: ExtractedFieldWithEvidence;
+  index: number;
+  isExpanded: boolean;
+  onToggleEvidence: () => void;
 }) {
   return (
-    <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-900">
-      <div className="mb-2">
-        <div className="text-sm font-medium">{field.extractedLabel}</div>
-        <div className="text-sm text-muted-foreground">{field.extractedValue}</div>
+    <div
+      className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="text-sm font-medium">{field.targetField}</div>
+          <div className="text-sm text-muted-foreground mt-1">
+            {typeof field.extractedValue === "string"
+              ? field.extractedValue
+              : JSON.stringify(field.extractedValue)}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={
+              field.confidence === "high"
+                ? "default"
+                : field.confidence === "medium"
+                ? "secondary"
+                : "outline"
+            }
+          >
+            {field.confidence}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleEvidence}
+            className="h-6 w-6 p-0"
+          >
+            <Eye className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
-      <select
-        className="w-full mt-2 p-2 border rounded text-sm"
-        value={selectedTarget || field.suggestedTargets[0]?.targetField || ""}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {field.suggestedTargets.map((target, idx) => (
-          <option key={idx} value={target.targetField}>
-            {target.targetField} ({target.confidence}) - {target.reason}
-          </option>
-        ))}
-        <option value="ignore">Ignorieren</option>
-      </select>
-    </div>
-  );
-}
-
-// Helper component for unmapped items
-function UnmappedItemRow({
-  item,
-  selectedTarget,
-  onChange,
-}: {
-  item: UnmappedItem;
-  selectedTarget: string | null | undefined;
-  onChange: (value: string | null) => void;
-}) {
-  return (
-    <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
-      <div className="mb-2">
-        {item.extractedLabel && (
-          <div className="text-sm font-medium">{item.extractedLabel}</div>
-        )}
-        <div className="text-sm text-muted-foreground">{item.extractedValue}</div>
-        {item.category && (
-          <Badge variant="outline" className="mt-1">{item.category}</Badge>
-        )}
-      </div>
-      {item.suggestedTargets.length > 0 && (
-        <select
-          className="w-full mt-2 p-2 border rounded text-sm"
-          value={selectedTarget || ""}
-          onChange={(e) => onChange(e.target.value || null)}
-        >
-          <option value="">-- Zielfeld wählen --</option>
-          {item.suggestedTargets.map((target, idx) => (
-            <option key={idx} value={target.targetField}>
-              {target.targetField} ({target.confidence}) - {target.reason}
-            </option>
-          ))}
-          <option value="ignore">Ignorieren</option>
-        </select>
+      {isExpanded && field.evidence && (
+        <div className="mt-2 pt-2 border-t border-green-200 dark:border-green-800 text-xs text-muted-foreground">
+          <div>Seite: {field.evidence.page}</div>
+          <div>Konfidenz: {(field.evidence.confidence * 100).toFixed(0)}%</div>
+          <div className="mt-1 p-1 bg-white/50 dark:bg-black/20 rounded text-xs font-mono">
+            &quot;{field.evidence.exactText}&quot;
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-// Helper function to set nested object values
 function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown) {
-  // Handle array indices like "experience[0].company"
   const arrayMatch = path.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
   if (arrayMatch) {
     const [, arrayName, indexStr, fieldName] = arrayMatch;
@@ -308,12 +298,10 @@ function setNestedValue(obj: Record<string, unknown>, path: string, value: unkno
     return;
   }
 
-  // Handle simple array like "skills"
   if (!path.includes('.') && !path.includes('[')) {
     obj[path] = value;
     return;
   }
 
-  // Handle other nested paths if needed
   obj[path] = value;
 }

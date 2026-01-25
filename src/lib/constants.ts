@@ -49,8 +49,10 @@ export const CV_AUTOFILL_CONFIG = {
   MAX_FILE_SIZE_MB: 10,
   MAX_PAGE_COUNT: 20,
   ALLOWED_FILE_TYPES: ['pdf', 'png', 'jpg', 'jpeg', 'docx'] as const,
-  EXTRACTION_TIMEOUT_MS: 30000,
+  EXTRACTION_TIMEOUT_MS: 120000,
   OCR_TIMEOUT_MS: 60000,
+  USE_AZURE_DI: true,
+  USE_LEGACY_FALLBACK: false,
 } as const;
 
 // Swiss Cantons with variations for matching

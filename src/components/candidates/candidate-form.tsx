@@ -12,7 +12,8 @@ import { Plus, X, Save, Loader2 } from "lucide-react";
 import { WORLD_LANGUAGES, LANGUAGE_LEVELS, MONTHS, generateYears } from "@/lib/constants";
 import { CVUploadButton } from "./cv-upload-button";
 import { CVMappingModal } from "./cv-mapping-modal";
-import type { CandidateAutoFillDraft, CandidateFormData } from "@/lib/cv-autofill/types";
+import type { CandidateFormData } from "@/lib/cv-autofill/types";
+import type { CandidateAutoFillDraftV2 } from "@/lib/azure-di/types";
 
 interface CandidateFormProps {
   candidate?: Candidate;
@@ -127,7 +128,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
   );
 
   // CV Auto-Fill state
-  const [cvDraft, setCvDraft] = useState<CandidateAutoFillDraft | null>(null);
+  const [cvDraft, setCvDraft] = useState<CandidateAutoFillDraftV2 | null>(null);
   const [showCvModal, setShowCvModal] = useState(false);
   const [cvError, setCvError] = useState("");
 
@@ -179,7 +180,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     }
   };
 
-  const handleCVUploadComplete = (draft: CandidateAutoFillDraft) => {
+  const handleCVUploadComplete = (draft: CandidateAutoFillDraftV2) => {
     setCvDraft(draft);
     setShowCvModal(true);
     setCvError("");

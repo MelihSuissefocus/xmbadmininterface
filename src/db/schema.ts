@@ -20,6 +20,7 @@ export const companyTypeEnum = pgEnum("company_type", ["ag", "gmbh", "einzelunte
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "recruiter", "viewer"]);
 export const auditActionEnum = pgEnum("audit_action", ["create", "update", "delete", "login", "logout", "password_reset"]);
+export const cvAnalysisStatusEnum = pgEnum("cv_analysis_status", ["pending", "processing", "completed", "failed"]);
 
 export const skills = pgTable("skills", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -84,6 +85,22 @@ export const auditLogs = pgTable("audit_logs", {
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const cvAnalysisJobs = pgTable("cv_analysis_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: cvAnalysisStatusEnum("status").default("pending").notNull(),
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  result: jsonb("result"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
 });
 
 export const users = pgTable("users", {
@@ -249,3 +266,5 @@ export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+export type CvAnalysisJob = typeof cvAnalysisJobs.$inferSelect;
+export type NewCvAnalysisJob = typeof cvAnalysisJobs.$inferInsert;

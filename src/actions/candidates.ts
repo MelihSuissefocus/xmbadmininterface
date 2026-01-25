@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { candidates, NewCandidate } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import type { CandidateAutoFillDraftV2 } from "@/lib/azure-di/types";
 
 interface ActionResult {
   success: boolean;
@@ -11,9 +12,31 @@ interface ActionResult {
   data?: unknown;
 }
 
-export async function createCandidate(data: NewCandidate): Promise<ActionResult> {
+export interface CreateCandidateWithParsedData extends NewCandidate {
+  cvExtractionDraft?: CandidateAutoFillDraftV2;
+}
+
+export async function createCandidate(
+  data: CreateCandidateWithParsedData
+): Promise<ActionResult> {
   try {
-    const [candidate] = await db.insert(candidates).values(data).returning();
+    const { cvExtractionDraft, ...candidateData } = data;
+
+    const insertData: NewCandidate = {
+      ...candidateData,
+      parsedData: cvExtractionDraft
+        ? {
+            extractionVersion: cvExtractionDraft.extractionVersion,
+            provider: cvExtractionDraft.provider,
+            extractedAt: cvExtractionDraft.metadata.timestamp,
+            filledFieldsCount: cvExtractionDraft.filledFields.length,
+            pageCount: cvExtractionDraft.metadata.pageCount,
+            processingTimeMs: cvExtractionDraft.metadata.processingTimeMs,
+          }
+        : null,
+    };
+
+    const [candidate] = await db.insert(candidates).values(insertData).returning();
     revalidatePath("/dashboard/candidates");
     revalidatePath("/dashboard");
     return { success: true, message: "Kandidat erfolgreich erstellt", data: candidate };
