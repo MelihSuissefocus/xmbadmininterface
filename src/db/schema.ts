@@ -92,15 +92,47 @@ export const cvAnalysisJobs = pgTable("cv_analysis_jobs", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
   status: cvAnalysisStatusEnum("status").default("pending").notNull(),
   fileName: text("file_name").notNull(),
   fileType: text("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
+  fileHash: text("file_hash"),
   result: jsonb("result"),
   error: text("error"),
+  errorCode: text("error_code"),
+  latencyMs: integer("latency_ms"),
+  pageCount: integer("page_count"),
+  autofillFieldCount: integer("autofill_field_count"),
+  reviewFieldCount: integer("review_field_count"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   completedAt: timestamp("completed_at"),
+});
+
+export const tenantQuotaConfig = pgTable("tenant_quota_config", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull().unique(),
+  dailyAnalysisQuota: integer("daily_analysis_quota").default(500).notNull(),
+  maxFileSizeMb: integer("max_file_size_mb").default(10),
+  maxPages: integer("max_pages").default(20),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const cvAnalyticsDaily = pgTable("cv_analytics_daily", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
+  date: date("date").notNull(),
+  successCount: integer("success_count").default(0).notNull(),
+  failureCount: integer("failure_count").default(0).notNull(),
+  timeoutCount: integer("timeout_count").default(0).notNull(),
+  dedupeHitCount: integer("dedupe_hit_count").default(0).notNull(),
+  totalLatencyMs: integer("total_latency_ms").default(0).notNull(),
+  totalPages: integer("total_pages").default(0).notNull(),
+  totalAutofillFields: integer("total_autofill_fields").default(0).notNull(),
+  totalReviewFields: integer("total_review_fields").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const users = pgTable("users", {
@@ -268,3 +300,43 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 export type CvAnalysisJob = typeof cvAnalysisJobs.$inferSelect;
 export type NewCvAnalysisJob = typeof cvAnalysisJobs.$inferInsert;
+
+export const tenantFieldSynonyms = pgTable("tenant_field_synonyms", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
+  sourceLabel: text("source_label").notNull(),
+  targetField: text("target_field").notNull(),
+  locale: text("locale").default("de"),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const tenantSkillAliases = pgTable("tenant_skill_aliases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
+  alias: text("alias").notNull(),
+  skillId: uuid("skill_id")
+    .notNull()
+    .references(() => skills.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const cvExtractionFeedback = pgTable("cv_extraction_feedback", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id").references(() => cvAnalysisJobs.id, { onDelete: "set null" }),
+  targetField: text("target_field").notNull(),
+  extractedValue: text("extracted_value"),
+  userValue: text("user_value"),
+  action: text("action").notNull(),
+  originalConfidence: integer("original_confidence"),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export type TenantFieldSynonym = typeof tenantFieldSynonyms.$inferSelect;
+export type NewTenantFieldSynonym = typeof tenantFieldSynonyms.$inferInsert;
+export type TenantSkillAlias = typeof tenantSkillAliases.$inferSelect;
+export type NewTenantSkillAlias = typeof tenantSkillAliases.$inferInsert;
+export type CvExtractionFeedback = typeof cvExtractionFeedback.$inferSelect;
+export type NewCvExtractionFeedback = typeof cvExtractionFeedback.$inferInsert;

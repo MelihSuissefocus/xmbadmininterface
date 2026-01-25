@@ -3,6 +3,9 @@ import "server-only";
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import type { DocumentRep, DocumentPage, DocumentLine, KeyValuePair, DetectedLanguage, DocumentTable, AzureDIConfig } from "./types";
 import { z } from "zod";
+import { cvLogger } from "@/lib/logger";
+
+const POLLER_MAX_WAIT_MS = 25000;
 
 const configSchema = z.object({
   AZURE_DI_ENDPOINT: z.string().url(),
@@ -16,6 +19,7 @@ function getConfig(): AzureDIConfig {
   });
 
   if (!env.success) {
+    cvLogger.error("Azure DI configuration missing", { action: "getConfig" });
     throw new Error("Azure Document Intelligence configuration missing");
   }
 
@@ -27,7 +31,7 @@ function getConfig(): AzureDIConfig {
       keyValuePairs: true,
       languages: true,
     },
-    timeoutMs: 120000,
+    timeoutMs: POLLER_MAX_WAIT_MS,
     maxFileSizeBytes: 10 * 1024 * 1024,
     maxPages: 20,
   };
@@ -52,7 +56,8 @@ function redactPII(text: string): string {
     .replace(/(\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g, "[PHONE]")
     .replace(/\b\d{13,19}\b/g, "[CARD]")
     .replace(/\b\d{3}-\d{2}-\d{4}\b/g, "[SSN]")
-    .replace(/\b756\.\d{4}\.\d{4}\.\d{2}\b/g, "[AHV]");
+    .replace(/\b756\.\d{4}\.\d{4}\.\d{2}\b/g, "[AHV]")
+    .replace(/\b[A-Z][a-zäöüéèà]+\s+[A-Z][a-zäöüéèà]+\b/g, "[NAME]");
 }
 
 export class AzureDIError extends Error {
@@ -96,6 +101,8 @@ export async function analyzeDocument(
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
 
   try {
+    cvLogger.debug("Starting Azure DI analysis", { action: "analyzeDocument", modelId: config.modelId });
+
     const poller = await client.beginAnalyzeDocument(
       config.modelId,
       fileBytes,
@@ -105,6 +112,8 @@ export async function analyzeDocument(
     );
 
     const result = await poller.pollUntilDone();
+
+    cvLogger.debug("Azure DI analysis complete", { action: "analyzeDocument", pageCount: result?.pages?.length });
 
     if (!result) {
       throw new AzureDIError("Analysis returned no result", "NO_RESULT");

@@ -1,0 +1,51 @@
+{
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 612,
+      "height": 792,
+      "unit": "pixel",
+      "lines": [
+        { "text": "Anna Schmidt", "confidence": 0.97, "page": 1, "polygon": { "points": [{"x": 50, "y": 50}, {"x": 200, "y": 50}] } },
+        { "text": "Product Manager", "confidence": 0.95, "page": 1, "polygon": { "points": [{"x": 50, "y": 70}, {"x": 200, "y": 70}] } },
+        { "text": "Kontakt", "confidence": 0.99, "page": 1, "polygon": { "points": [{"x": 400, "y": 50}, {"x": 500, "y": 50}] } },
+        { "text": "anna.schmidt@gmail.com", "confidence": 0.98, "page": 1, "polygon": { "points": [{"x": 400, "y": 70}, {"x": 550, "y": 70}] } },
+        { "text": "079 234 56 78", "confidence": 0.96, "page": 1, "polygon": { "points": [{"x": 400, "y": 90}, {"x": 500, "y": 90}] } },
+        { "text": "Bern", "confidence": 0.97, "page": 1, "polygon": { "points": [{"x": 400, "y": 110}, {"x": 450, "y": 110}] } },
+        { "text": "Languages", "confidence": 0.99, "page": 1, "polygon": { "points": [{"x": 400, "y": 150}, {"x": 500, "y": 150}] } },
+        { "text": "German - Native", "confidence": 0.97, "page": 1, "polygon": { "points": [{"x": 400, "y": 170}, {"x": 550, "y": 170}] } },
+        { "text": "English - Fluent (C2)", "confidence": 0.96, "page": 1, "polygon": { "points": [{"x": 400, "y": 190}, {"x": 550, "y": 190}] } },
+        { "text": "French - Intermediate (B1)", "confidence": 0.95, "page": 1, "polygon": { "points": [{"x": 400, "y": 210}, {"x": 550, "y": 210}] } },
+        { "text": "Experience", "confidence": 0.99, "page": 1, "polygon": { "points": [{"x": 50, "y": 150}, {"x": 150, "y": 150}] } },
+        { "text": "2021 - Present", "confidence": 0.96, "page": 1, "polygon": { "points": [{"x": 50, "y": 170}, {"x": 150, "y": 170}] } },
+        { "text": "Senior Product Manager", "confidence": 0.95, "page": 1, "polygon": { "points": [{"x": 50, "y": 190}, {"x": 250, "y": 190}] } },
+        { "text": "Swisscom AG, Bern", "confidence": 0.97, "page": 1, "polygon": { "points": [{"x": 50, "y": 210}, {"x": 200, "y": 210}] } },
+        { "text": "2018 - 2021", "confidence": 0.96, "page": 1, "polygon": { "points": [{"x": 50, "y": 250}, {"x": 150, "y": 250}] } },
+        { "text": "Product Manager", "confidence": 0.95, "page": 1, "polygon": { "points": [{"x": 50, "y": 270}, {"x": 200, "y": 270}] } },
+        { "text": "PostFinance AG", "confidence": 0.97, "page": 1, "polygon": { "points": [{"x": 50, "y": 290}, {"x": 180, "y": 290}] } },
+        { "text": "Education", "confidence": 0.99, "page": 1, "polygon": { "points": [{"x": 50, "y": 350}, {"x": 150, "y": 350}] } },
+        { "text": "2014 - 2018", "confidence": 0.97, "page": 1, "polygon": { "points": [{"x": 50, "y": 370}, {"x": 150, "y": 370}] } },
+        { "text": "Bachelor in Business Administration", "confidence": 0.96, "page": 1, "polygon": { "points": [{"x": 50, "y": 390}, {"x": 300, "y": 390}] } },
+        { "text": "University of Bern", "confidence": 0.98, "page": 1, "polygon": { "points": [{"x": 50, "y": 410}, {"x": 200, "y": 410}] } },
+        { "text": "Skills", "confidence": 0.99, "page": 1, "polygon": { "points": [{"x": 400, "y": 250}, {"x": 450, "y": 250}] } },
+        { "text": "Agile, Scrum, JIRA, Confluence, SQL, Tableau, Figma", "confidence": 0.94, "page": 1, "polygon": { "points": [{"x": 400, "y": 270}, {"x": 580, "y": 270}] } }
+      ]
+    }
+  ],
+  "tables": [],
+  "keyValuePairs": [
+    { "key": "email", "value": "anna.schmidt@gmail.com", "confidence": 0.98, "page": 1 },
+    { "key": "phone", "value": "079 234 56 78", "confidence": 0.96, "page": 1 },
+    { "key": "city", "value": "Bern", "confidence": 0.97, "page": 1 }
+  ],
+  "detectedLanguages": [
+    { "locale": "en", "confidence": 0.85 },
+    { "locale": "de", "confidence": 0.15 }
+  ],
+  "content": "Anna Schmidt\nProduct Manager\n...",
+  "pageCount": 1,
+  "extractedAt": "2024-01-25T10:00:00Z",
+  "provider": "azure-document-intelligence",
+  "modelId": "prebuilt-layout"
+}
+

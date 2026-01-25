@@ -1,0 +1,40 @@
+{
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 2480,
+      "height": 3508,
+      "unit": "pixel",
+      "lines": [
+        { "text": "Peter Meier", "confidence": 0.85, "page": 1 },
+        { "text": "Softwareentwickler", "confidence": 0.82, "page": 1 },
+        { "text": "peter.meier@bluewin.ch", "confidence": 0.88, "page": 1 },
+        { "text": "044 555 66 77", "confidence": 0.79, "page": 1 },
+        { "text": "Hauptstrasse 25", "confidence": 0.75, "page": 1 },
+        { "text": "8400 Winterthur", "confidence": 0.83, "page": 1 },
+        { "text": "Berufserfahrung", "confidence": 0.91, "page": 1 },
+        { "text": "2019 - heute", "confidence": 0.78, "page": 1 },
+        { "text": "Entwickler", "confidence": 0.80, "page": 1 },
+        { "text": "Zühlke Engineering", "confidence": 0.76, "page": 1 },
+        { "text": "Ausbildung", "confidence": 0.89, "page": 1 },
+        { "text": "2015-2019", "confidence": 0.77, "page": 1 },
+        { "text": "BSc Informatik", "confidence": 0.81, "page": 1 },
+        { "text": "ZHAW Winterthur", "confidence": 0.84, "page": 1 },
+        { "text": "Sprachen", "confidence": 0.90, "page": 1 },
+        { "text": "Deutsch Muttersprache", "confidence": 0.86, "page": 1 },
+        { "text": "Englisch B2", "confidence": 0.83, "page": 1 }
+      ]
+    }
+  ],
+  "tables": [],
+  "keyValuePairs": [],
+  "detectedLanguages": [
+    { "locale": "de", "confidence": 0.92 }
+  ],
+  "content": "Peter Meier\nSoftwareentwickler\n...",
+  "pageCount": 1,
+  "extractedAt": "2024-01-25T10:00:00Z",
+  "provider": "azure-document-intelligence",
+  "modelId": "prebuilt-layout"
+}
+

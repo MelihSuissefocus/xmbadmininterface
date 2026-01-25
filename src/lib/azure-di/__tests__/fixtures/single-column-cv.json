@@ -1,0 +1,54 @@
+{
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 612,
+      "height": 792,
+      "unit": "pixel",
+      "lines": [
+        { "text": "Max Mustermann", "confidence": 0.98, "page": 1 },
+        { "text": "Senior Software Engineer", "confidence": 0.95, "page": 1 },
+        { "text": "E-Mail: max.mustermann@example.com", "confidence": 0.99, "page": 1 },
+        { "text": "Telefon: +41 79 123 45 67", "confidence": 0.97, "page": 1 },
+        { "text": "Adresse: Bahnhofstrasse 10, 8001 Zürich", "confidence": 0.94, "page": 1 },
+        { "text": "", "confidence": 1.0, "page": 1 },
+        { "text": "BERUFSERFAHRUNG", "confidence": 0.99, "page": 1 },
+        { "text": "01/2020 - heute", "confidence": 0.96, "page": 1 },
+        { "text": "Senior Software Engineer", "confidence": 0.95, "page": 1 },
+        { "text": "Google Switzerland GmbH", "confidence": 0.97, "page": 1 },
+        { "text": "Entwicklung von Cloud-Lösungen", "confidence": 0.93, "page": 1 },
+        { "text": "06/2017 - 12/2019", "confidence": 0.96, "page": 1 },
+        { "text": "Software Engineer", "confidence": 0.95, "page": 1 },
+        { "text": "UBS AG", "confidence": 0.98, "page": 1 },
+        { "text": "Backend-Entwicklung für Trading-Systeme", "confidence": 0.92, "page": 1 },
+        { "text": "", "confidence": 1.0, "page": 1 },
+        { "text": "AUSBILDUNG", "confidence": 0.99, "page": 1 },
+        { "text": "2012 - 2017", "confidence": 0.97, "page": 1 },
+        { "text": "Master of Science in Informatik", "confidence": 0.96, "page": 1 },
+        { "text": "ETH Zürich", "confidence": 0.98, "page": 1 },
+        { "text": "", "confidence": 1.0, "page": 1 },
+        { "text": "SKILLS", "confidence": 0.99, "page": 1 },
+        { "text": "Java, Python, TypeScript, React, Node.js, AWS, Docker, Kubernetes", "confidence": 0.94, "page": 1 },
+        { "text": "", "confidence": 1.0, "page": 1 },
+        { "text": "SPRACHEN", "confidence": 0.99, "page": 1 },
+        { "text": "Deutsch: Muttersprache", "confidence": 0.97, "page": 1 },
+        { "text": "Englisch: C1", "confidence": 0.96, "page": 1 },
+        { "text": "Französisch: B2", "confidence": 0.95, "page": 1 }
+      ]
+    }
+  ],
+  "tables": [],
+  "keyValuePairs": [
+    { "key": "E-Mail", "value": "max.mustermann@example.com", "confidence": 0.99, "page": 1 },
+    { "key": "Telefon", "value": "+41 79 123 45 67", "confidence": 0.97, "page": 1 }
+  ],
+  "detectedLanguages": [
+    { "locale": "de", "confidence": 0.95 }
+  ],
+  "content": "Max Mustermann\nSenior Software Engineer\nE-Mail: max.mustermann@example.com\nTelefon: +41 79 123 45 67\n...",
+  "pageCount": 1,
+  "extractedAt": "2024-01-25T10:00:00Z",
+  "provider": "azure-document-intelligence",
+  "modelId": "prebuilt-layout"
+}
+
