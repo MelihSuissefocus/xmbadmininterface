@@ -7,7 +7,6 @@ import {
   Phone,
   MapPin,
   Linkedin,
-  Calendar,
   Briefcase,
   GraduationCap,
   Award,

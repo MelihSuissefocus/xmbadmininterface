@@ -49,7 +49,7 @@ const typeColors = {
   contract: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
 };
 
-export function JobsList({ jobs, availableSkills, availableLocations }: JobsListProps) {
+export function JobsList({ jobs, availableSkills }: JobsListProps) {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);

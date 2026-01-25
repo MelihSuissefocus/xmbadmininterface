@@ -17,6 +17,7 @@ interface UserManagementProps {
 
 export function UserManagement({ initialUsers }: UserManagementProps) {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [users, setUsers] = useState(initialUsers);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

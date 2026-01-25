@@ -1,0 +1,399 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://adminportalxmb.local/schemas/cv-autofill-draft.json",
+  "title": "CandidateAutoFillDraft",
+  "description": "Schema für den CV-Extraktions-Draft, der dem User zur Review präsentiert wird bevor Daten ins Candidate-Form übernommen werden.",
+  "type": "object",
+  "required": ["filledFields", "ambiguousFields", "unmappedItems", "metadata"],
+  "properties": {
+    "filledFields": {
+      "type": "array",
+      "description": "Erfolgreich extrahierte und gemappte Felder",
+      "items": {
+        "$ref": "#/$defs/FilledField"
+      }
+    },
+    "ambiguousFields": {
+      "type": "array",
+      "description": "Felder mit mehreren möglichen Ziel-Mappings",
+      "items": {
+        "$ref": "#/$defs/AmbiguousField"
+      }
+    },
+    "unmappedItems": {
+      "type": "array",
+      "description": "Extrahierte Werte ohne eindeutige Zuordnung",
+      "items": {
+        "$ref": "#/$defs/UnmappedItem"
+      }
+    },
+    "metadata": {
+      "$ref": "#/$defs/ExtractionMetadata"
+    }
+  },
+  "$defs": {
+    "FilledField": {
+      "type": "object",
+      "required": ["targetField", "extractedValue", "confidence", "source"],
+      "properties": {
+        "targetField": {
+          "type": "string",
+          "description": "Zielfeld im Candidate-Form (z.B. 'firstName', 'experience[0].company')",
+          "examples": [
+            "firstName",
+            "lastName",
+            "email",
+            "phone",
+            "street",
+            "postalCode",
+            "city",
+            "canton",
+            "linkedinUrl",
+            "targetRole",
+            "yearsOfExperience",
+            "currentSalary",
+            "expectedSalary",
+            "desiredHourlyRate",
+            "isSubcontractor",
+            "companyName",
+            "companyType",
+            "workloadPreference",
+            "noticePeriod",
+            "availableFrom",
+            "skills",
+            "languages",
+            "certificates",
+            "education",
+            "experience",
+            "highlights"
+          ]
+        },
+        "extractedValue": {
+          "description": "Extrahierter Wert (Typ variiert je nach Feld)",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "array" },
+            { "type": "object" }
+          ]
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceLevel"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceInfo"
+        }
+      }
+    },
+    "AmbiguousField": {
+      "type": "object",
+      "required": ["extractedLabel", "extractedValue", "suggestedTargets", "source"],
+      "properties": {
+        "extractedLabel": {
+          "type": "string",
+          "description": "Das Label wie es im CV gefunden wurde",
+          "examples": ["Ethnicity", "Nationality", "Personal ID", "Heimatort"]
+        },
+        "extractedValue": {
+          "type": "string",
+          "description": "Der extrahierte Wert"
+        },
+        "suggestedTargets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/SuggestedTarget"
+          }
+        },
+        "selectedTarget": {
+          "type": ["string", "null"],
+          "description": "Vom User gewähltes Zielfeld oder null für 'ignorieren'"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceInfo"
+        }
+      }
+    },
+    "UnmappedItem": {
+      "type": "object",
+      "required": ["extractedValue", "source"],
+      "properties": {
+        "extractedLabel": {
+          "type": ["string", "null"],
+          "description": "Optionales Label falls im CV vorhanden"
+        },
+        "extractedValue": {
+          "type": "string",
+          "description": "Der extrahierte Wert"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["contact", "date", "text", "skill", "language", "education", "experience", "other"],
+          "description": "Kategorie des extrahierten Werts"
+        },
+        "suggestedTargets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SuggestedTarget"
+          }
+        },
+        "selectedTarget": {
+          "type": ["string", "null"],
+          "description": "Vom User gewähltes Zielfeld oder null für 'ignorieren'"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceInfo"
+        }
+      }
+    },
+    "SuggestedTarget": {
+      "type": "object",
+      "required": ["targetField", "confidence", "reason"],
+      "properties": {
+        "targetField": {
+          "type": "string",
+          "description": "Vorgeschlagenes Zielfeld"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceLevel"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Begründung für den Vorschlag",
+          "examples": [
+            "Label similarity",
+            "Pattern match",
+            "Semantic inference",
+            "Fallback option",
+            "Field already filled",
+            "Skill not in system"
+          ]
+        }
+      }
+    },
+    "ConfidenceLevel": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Confidence-Level der Extraktion/Zuordnung"
+    },
+    "SourceInfo": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Original-Text aus dem CV"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Seitennummer (1-basiert)"
+        },
+        "position": {
+          "type": "string",
+          "description": "Position im Dokument",
+          "examples": ["header", "section:personal", "section:education", "section:experience", "footer"]
+        }
+      }
+    },
+    "ExtractionMetadata": {
+      "type": "object",
+      "required": ["fileName", "fileType", "fileSize", "extractionMethod", "processingTimeMs", "timestamp"],
+      "properties": {
+        "fileName": {
+          "type": "string",
+          "description": "Name der hochgeladenen Datei"
+        },
+        "fileType": {
+          "type": "string",
+          "enum": ["pdf", "png", "jpg", "jpeg", "docx"],
+          "description": "Dateityp"
+        },
+        "fileSize": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Dateigröße in Bytes"
+        },
+        "pageCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Anzahl Seiten (nur bei PDF/DOCX)"
+        },
+        "extractionMethod": {
+          "type": "string",
+          "enum": ["text", "ocr"],
+          "description": "Verwendete Extraktionsmethode"
+        },
+        "processingTimeMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Verarbeitungszeit in Millisekunden"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Zeitpunkt der Extraktion (ISO 8601)"
+        }
+      }
+    },
+    "CandidateFormData": {
+      "type": "object",
+      "description": "Ziel-Struktur passend zu src/components/candidates/candidate-form.tsx",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": ["string", "null"] },
+        "phone": { "type": ["string", "null"] },
+        "street": { "type": ["string", "null"] },
+        "postalCode": { "type": ["string", "null"] },
+        "city": { "type": ["string", "null"] },
+        "canton": {
+          "type": ["string", "null"],
+          "enum": [null, "AG", "AR", "AI", "BL", "BS", "BE", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SH", "SZ", "SO", "SG", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH"]
+        },
+        "linkedinUrl": { "type": ["string", "null"] },
+        "targetRole": { "type": ["string", "null"] },
+        "yearsOfExperience": { "type": ["integer", "null"], "minimum": 0 },
+        "currentSalary": { "type": ["integer", "null"], "minimum": 0 },
+        "expectedSalary": { "type": ["integer", "null"], "minimum": 0 },
+        "desiredHourlyRate": { "type": ["integer", "null"], "minimum": 0 },
+        "isSubcontractor": { "type": "boolean", "default": false },
+        "companyName": { "type": ["string", "null"] },
+        "companyType": {
+          "type": ["string", "null"],
+          "enum": [null, "ag", "gmbh", "einzelunternehmen"]
+        },
+        "workloadPreference": {
+          "type": ["string", "null"],
+          "enum": [null, "100%", "80-100%", "60-80%", "40-60%", "Flexibel"]
+        },
+        "noticePeriod": { "type": ["string", "null"] },
+        "availableFrom": {
+          "type": ["string", "null"],
+          "format": "date"
+        },
+        "notes": { "type": ["string", "null"] },
+        "status": {
+          "type": "string",
+          "enum": ["new", "reviewed", "rejected", "placed"],
+          "default": "new"
+        },
+        "skills": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LanguageEntry"
+          }
+        },
+        "certificates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CertificateEntry"
+          }
+        },
+        "education": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EducationEntry"
+          }
+        },
+        "experience": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExperienceEntry"
+          }
+        },
+        "highlights": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["firstName", "lastName"]
+    },
+    "LanguageEntry": {
+      "type": "object",
+      "required": ["language", "level"],
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Sprache aus WORLD_LANGUAGES"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["A1", "A2", "B1", "B2", "C1", "C2", "Muttersprache"],
+          "description": "Sprachniveau"
+        }
+      }
+    },
+    "CertificateEntry": {
+      "type": "object",
+      "required": ["name", "issuer", "date"],
+      "properties": {
+        "name": { "type": "string" },
+        "issuer": { "type": "string" },
+        "date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "EducationEntry": {
+      "type": "object",
+      "required": ["degree", "institution"],
+      "properties": {
+        "degree": { "type": "string" },
+        "institution": { "type": "string" },
+        "startMonth": {
+          "type": "string",
+          "pattern": "^(0[1-9]|1[0-2])$"
+        },
+        "startYear": {
+          "type": "string",
+          "pattern": "^[0-9]{4}$"
+        },
+        "endMonth": {
+          "type": "string",
+          "pattern": "^(0[1-9]|1[0-2])$"
+        },
+        "endYear": {
+          "type": "string",
+          "pattern": "^[0-9]{4}$"
+        }
+      }
+    },
+    "ExperienceEntry": {
+      "type": "object",
+      "required": ["role", "company"],
+      "properties": {
+        "role": { "type": "string" },
+        "company": { "type": "string" },
+        "startMonth": {
+          "type": "string",
+          "pattern": "^(0[1-9]|1[0-2])$"
+        },
+        "startYear": {
+          "type": "string",
+          "pattern": "^[0-9]{4}$"
+        },
+        "endMonth": {
+          "type": "string",
+          "pattern": "^(0[1-9]|1[0-2])$"
+        },
+        "endYear": {
+          "type": "string",
+          "pattern": "^[0-9]{4}$"
+        },
+        "current": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

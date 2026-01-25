@@ -10,7 +10,7 @@ import {
   updateAssignmentStatus,
   removeAssignment,
 } from "@/actions/jobs";
-import { Plus, X, UserPlus, ChevronDown } from "lucide-react";
+import { X, UserPlus, ChevronDown } from "lucide-react";
 
 interface CandidateAssignmentProps {
   jobId: string;

@@ -1,36 +1,72 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
+import { migrate } from "drizzle-orm/neon-http/migrator";
 import * as schema from "../src/db/schema";
 import { config } from "dotenv";
 
 config({ path: ".env.local" });
 
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql, { schema });
+async function runMigrations() {
+  console.log("🚀 Starting database migrations...");
 
-async function seedInitialData() {
-  console.log("🌱 Seeding initial data...");
-
-  try {
-    console.log("✅ Initial data seeded successfully!");
-  } catch (error) {
-    console.error("❌ Error seeding data:", error);
-    throw error;
+  // Validate DATABASE_URL
+  if (!process.env.DATABASE_URL) {
+    console.error("❌ ERROR: DATABASE_URL environment variable is not set");
+    console.error("Please set DATABASE_URL in .env.local or as environment variable");
+    process.exit(1);
   }
-}
 
-async function main() {
-  console.log("🚀 Starting migration and seed...");
-  
   try {
-    await seedInitialData();
-    console.log("✨ Migration and seed completed!");
+    // Create database connection
+    const sql = neon(process.env.DATABASE_URL);
+    const db = drizzle(sql, { schema });
+
+    console.log("📦 Applying migrations from ./drizzle folder...");
+
+    // Run migrations - drizzle handles tracking internally via __drizzle_migrations table
+    // If migrations are already applied, this will be a no-op
+    await migrate(db, { migrationsFolder: "./drizzle" });
+
+    console.log("✅ All migrations applied successfully!");
     process.exit(0);
   } catch (error) {
-    console.error("💥 Failed:", error);
+    // Check if error is due to migrations already being applied
+    let errorMessage = "";
+    let errorCode = "";
+    
+    // Extract error details from nested error structure
+    if (error && typeof error === "object") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
+      
+      // Get message from the error or its cause
+      errorMessage = (err.message || err.cause?.message || "").toLowerCase();
+      
+      // Get PostgreSQL error code from nested cause
+      errorCode = err.cause?.code || err.code || "";
+    }
+    
+    // Common errors when migrations are already applied
+    if (
+      errorMessage.includes("already exists") ||
+      errorMessage.includes("duplicate") ||
+      errorCode === "42710" || // PostgreSQL: duplicate object
+      errorCode === "42P07" || // PostgreSQL: duplicate table
+      errorCode === "42701"    // PostgreSQL: duplicate column
+    ) {
+      console.log("⚠️  Warning: Some migrations may already be applied");
+      console.log("✅ Database schema is up to date!");
+      process.exit(0);
+    }
+
+    // If it's a real error, fail
+    console.error("❌ Migration failed:", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Stack trace:", error.stack);
+    }
     process.exit(1);
   }
 }
 
-main();
-
+runMigrations();

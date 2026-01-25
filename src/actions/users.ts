@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { users, NewUser } from "@/db/schema";
-import { eq, ne } from "drizzle-orm";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";

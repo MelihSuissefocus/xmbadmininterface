@@ -10,6 +10,9 @@ import { getAllSkills } from "@/actions/skills";
 import { Candidate, NewCandidate, Skill } from "@/db/schema";
 import { Plus, X, Save, Loader2 } from "lucide-react";
 import { WORLD_LANGUAGES, LANGUAGE_LEVELS, MONTHS, generateYears } from "@/lib/constants";
+import { CVUploadButton } from "./cv-upload-button";
+import { CVMappingModal } from "./cv-mapping-modal";
+import type { CandidateAutoFillDraft, CandidateFormData } from "@/lib/cv-autofill/types";
 
 interface CandidateFormProps {
   candidate?: Candidate;
@@ -71,7 +74,14 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     endMonth: string;
     endYear: string;
   }[]>(
-    (candidate?.education as any)?.map((edu: any) => ({
+    (candidate?.education as Array<{
+      degree: string;
+      institution: string;
+      startMonth: string;
+      startYear: string;
+      endMonth: string;
+      endYear: string;
+    }>)?.map((edu) => ({
       degree: edu.degree || "",
       institution: edu.institution || "",
       startMonth: edu.startMonth || "",
@@ -91,7 +101,16 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     current: boolean;
     description: string;
   }[]>(
-    (candidate?.experience as any)?.map((exp: any) => ({
+    (candidate?.experience as Array<{
+      role: string;
+      company: string;
+      startMonth: string;
+      startYear: string;
+      endMonth: string;
+      endYear: string;
+      current: boolean;
+      description: string;
+    }>)?.map((exp) => ({
       role: exp.role || "",
       company: exp.company || "",
       startMonth: exp.startMonth || "",
@@ -106,6 +125,11 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
   const [highlights, setHighlights] = useState<string[]>(
     (candidate?.highlights as string[]) ?? []
   );
+
+  // CV Auto-Fill state
+  const [cvDraft, setCvDraft] = useState<CandidateAutoFillDraft | null>(null);
+  const [showCvModal, setShowCvModal] = useState(false);
+  const [cvError, setCvError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +177,89 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     } else {
       setError(result.message);
     }
+  };
+
+  const handleCVUploadComplete = (draft: CandidateAutoFillDraft) => {
+    setCvDraft(draft);
+    setShowCvModal(true);
+    setCvError("");
+  };
+
+  const handleCVError = (errorMessage: string) => {
+    setCvError(errorMessage);
+    setTimeout(() => setCvError(""), 5000);
+  };
+
+  const handleCVDataApply = (mappedData: Partial<CandidateFormData>) => {
+    // Apply mapped data to form state
+    if (mappedData.firstName) setFormData(prev => ({ ...prev, firstName: mappedData.firstName || "" }));
+    if (mappedData.lastName) setFormData(prev => ({ ...prev, lastName: mappedData.lastName || "" }));
+    if (mappedData.email) setFormData(prev => ({ ...prev, email: mappedData.email || "" }));
+    if (mappedData.phone) setFormData(prev => ({ ...prev, phone: mappedData.phone || "" }));
+    if (mappedData.street) setFormData(prev => ({ ...prev, street: mappedData.street || "" }));
+    if (mappedData.postalCode) setFormData(prev => ({ ...prev, postalCode: mappedData.postalCode || "" }));
+    if (mappedData.city) setFormData(prev => ({ ...prev, city: mappedData.city || "" }));
+    if (mappedData.canton) setFormData(prev => ({ ...prev, canton: mappedData.canton || "" }));
+    if (mappedData.linkedinUrl) setFormData(prev => ({ ...prev, linkedinUrl: mappedData.linkedinUrl || "" }));
+    if (mappedData.targetRole) setFormData(prev => ({ ...prev, targetRole: mappedData.targetRole || "" }));
+    if (mappedData.yearsOfExperience !== undefined) setFormData(prev => ({ ...prev, yearsOfExperience: mappedData.yearsOfExperience || 0 }));
+    if (mappedData.currentSalary !== undefined) setFormData(prev => ({ ...prev, currentSalary: mappedData.currentSalary || 0 }));
+    if (mappedData.expectedSalary !== undefined) setFormData(prev => ({ ...prev, expectedSalary: mappedData.expectedSalary || 0 }));
+    if (mappedData.desiredHourlyRate !== undefined) setFormData(prev => ({ ...prev, desiredHourlyRate: mappedData.desiredHourlyRate || 0 }));
+    if (mappedData.isSubcontractor !== undefined) setFormData(prev => ({ ...prev, isSubcontractor: mappedData.isSubcontractor || false }));
+    if (mappedData.companyName) setFormData(prev => ({ ...prev, companyName: mappedData.companyName || "" }));
+    if (mappedData.companyType) setFormData(prev => ({ ...prev, companyType: mappedData.companyType || "" }));
+    if (mappedData.workloadPreference) setFormData(prev => ({ ...prev, workloadPreference: mappedData.workloadPreference || "" }));
+    if (mappedData.noticePeriod) setFormData(prev => ({ ...prev, noticePeriod: mappedData.noticePeriod || "" }));
+    if (mappedData.availableFrom) setFormData(prev => ({ ...prev, availableFrom: mappedData.availableFrom || "" }));
+    if (mappedData.notes) setFormData(prev => ({ ...prev, notes: mappedData.notes || "" }));
+
+    // Apply array fields
+    if (mappedData.skills && mappedData.skills.length > 0) {
+      setSelectedSkills(mappedData.skills);
+    }
+    if (mappedData.languages && mappedData.languages.length > 0) {
+      setLanguages(mappedData.languages);
+    }
+    if (mappedData.certificates && mappedData.certificates.length > 0) {
+      setCertificates(mappedData.certificates);
+    }
+    if (mappedData.education && mappedData.education.length > 0) {
+      // Convert EducationEntry to form structure (ensure all fields are defined)
+      setEducation(mappedData.education.map(edu => ({
+        degree: edu.degree,
+        institution: edu.institution,
+        startMonth: edu.startMonth || "",
+        startYear: edu.startYear || "",
+        endMonth: edu.endMonth || "",
+        endYear: edu.endYear || "",
+      })));
+    }
+    if (mappedData.experience && mappedData.experience.length > 0) {
+      // Convert ExperienceEntry to form structure (ensure all fields are defined)
+      setExperience(mappedData.experience.map(exp => ({
+        role: exp.role,
+        company: exp.company,
+        startMonth: exp.startMonth || "",
+        startYear: exp.startYear || "",
+        endMonth: exp.endMonth || "",
+        endYear: exp.endYear || "",
+        current: exp.current || false,
+        description: exp.description || "",
+      })));
+    }
+    if (mappedData.highlights && mappedData.highlights.length > 0) {
+      setHighlights(mappedData.highlights);
+    }
+
+    // Close modal
+    setShowCvModal(false);
+    setCvDraft(null);
+  };
+
+  const handleCVModalCancel = () => {
+    setShowCvModal(false);
+    setCvDraft(null);
   };
 
   const toggleSkill = (skillName: string) => {
@@ -267,12 +374,38 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Basic Info */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Persönliche Daten
-        </h2>
+    <>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* CV Upload Section */}
+        {!candidate && (
+          <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                  CV hochladen
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Laden Sie einen Lebenslauf hoch, um Felder automatisch auszufüllen
+                </p>
+              </div>
+              <CVUploadButton
+                onUploadComplete={handleCVUploadComplete}
+                onError={handleCVError}
+              />
+              {cvError && (
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  {cvError}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Basic Info */}
+        <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            Persönliche Daten
+          </h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="firstName">Vorname *</Label>
@@ -960,7 +1093,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
           ))}
           {highlights.length === 0 && (
             <p className="text-sm text-slate-500 text-center py-4">
-              Keine Highlights hinzugefügt. Klicken Sie auf "Hinzufügen", um ein Highlight zu erstellen.
+              Keine Highlights hinzugefügt. Klicken Sie auf &quot;Hinzufügen&quot;, um ein Highlight zu erstellen.
             </p>
           )}
         </div>
@@ -1009,5 +1142,14 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </Button>
       </div>
     </form>
+
+    {/* CV Mapping Modal */}
+    <CVMappingModal
+      draft={cvDraft}
+      isOpen={showCvModal}
+      onConfirm={handleCVDataApply}
+      onCancel={handleCVModalCancel}
+    />
+  </>
   );
 }

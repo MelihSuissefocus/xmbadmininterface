@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { jobs, jobCandidates, candidates, NewJob, NewJobCandidate } from "@/db/schema";
+import { jobs, jobCandidates, candidates, NewJob } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 

@@ -15,6 +15,7 @@ interface SkillsManagementProps {
 
 export function SkillsManagement({ initialSkills }: SkillsManagementProps) {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [skills, setSkills] = useState(initialSkills);
   const [newSkillName, setNewSkillName] = useState("");
   const [loading, setLoading] = useState(false);

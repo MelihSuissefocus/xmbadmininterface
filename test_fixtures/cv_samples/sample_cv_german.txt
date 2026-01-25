@@ -1,0 +1,37 @@
+LEBENSLAUF
+
+Max Mustermann
+Musterstraße 123
+12345 Musterstadt
+
+E-Mail: max.mustermann@example.com
+Telefon: +49 123 4567890
+
+BERUFSERFAHRUNG
+
+2020 - heute    Senior Entwickler bei Beispiel GmbH
+                - Entwicklung von Web-Applikationen
+                - Team-Lead für 5 Entwickler
+                - Einführung von CI/CD Pipelines
+
+2017 - 2020     Entwickler bei Test AG
+                - Backend-Entwicklung mit Python
+                - Datenbank-Design und Optimierung
+                - REST API Entwicklung
+
+AUSBILDUNG
+
+2013 - 2017     B.Sc. Informatik, Muster-Universität
+                Abschlussnote: 1.8
+
+KENNTNISSE
+
+Programmierung: Python, TypeScript, SQL, JavaScript
+Frameworks: FastAPI, React, Next.js, Django
+Tools: Git, Docker, Kubernetes, AWS
+Sprachen: Deutsch (Muttersprache), Englisch (fließend)
+
+ZERTIFIKATE
+
+2021            AWS Certified Solutions Architect
+2019            Scrum Master Zertifizierung

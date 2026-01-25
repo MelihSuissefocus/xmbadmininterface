@@ -16,10 +16,7 @@ import {
   deleteUser,
 } from "@/actions/users";
 import {
-  Plus,
   Search,
-  Mail,
-  Shield,
   ShieldAlert,
   ShieldCheck,
   Lock,
@@ -29,7 +26,6 @@ import {
   Edit,
   X,
   UserPlus,
-  AlertTriangle,
   CheckCircle,
   XCircle,
 } from "lucide-react";

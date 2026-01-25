@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { loginAction } from "@/actions/auth";
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaInput, setCaptchaInput] = useState("");
-  const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, answer: 0 });
+  const [captcha, setCaptcha] = useState(() => generateCaptcha());
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,10 +26,6 @@ export default function LoginPage() {
     setCaptcha(generateCaptcha());
     setCaptchaInput("");
   }, []);
-
-  useEffect(() => {
-    refreshCaptcha();
-  }, [refreshCaptcha]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
