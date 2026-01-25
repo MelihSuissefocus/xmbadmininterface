@@ -22,29 +22,40 @@ import {
 export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
   const info: Partial<CandidateFormData> = {};
 
+  // Normalize text: remove excessive spacing between capital letters (e.g., "M E L I H" -> "MELIH")
+  // This handles PDFs where letters are spaced out
+  // Find patterns like "X X X X" where X is a single capital letter and remove spaces
+  let normalizedText = text;
+  // Repeatedly collapse "letter space letter" until no more matches
+  let prev = '';
+  while (prev !== normalizedText) {
+    prev = normalizedText;
+    normalizedText = normalizedText.replace(/([A-ZÄÖÜ])\s+([A-ZÄÖÜ])(?=\s+[A-ZÄÖÜ]|[a-zäöü]|\s|$)/g, '$1$2');
+  }
+
   // Extract email
   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-  const emails = text.match(emailRegex);
+  const emails = normalizedText.match(emailRegex);
   if (emails && emails.length > 0) {
     info.email = emails[0];
   }
 
   // Extract phone number (various formats)
   const phoneRegex = /(\+?\d{1,3}[\s-]?)?(\(?\d{2,3}\)?[\s-]?)?\d{3}[\s-]?\d{2}[\s-]?\d{2}/g;
-  const phones = text.match(phoneRegex);
+  const phones = normalizedText.match(phoneRegex);
   if (phones && phones.length > 0) {
     info.phone = phones[0].trim();
   }
 
   // Extract LinkedIn URL
   const linkedinRegex = /(https?:\/\/)?(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/gi;
-  const linkedin = text.match(linkedinRegex);
+  const linkedin = normalizedText.match(linkedinRegex);
   if (linkedin && linkedin.length > 0) {
     info.linkedinUrl = linkedin[0];
   }
 
   // Extract name (look for patterns like "Name: John Doe" or just "John Doe" at the start)
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
   // Try to find name in first few lines
   for (let i = 0; i < Math.min(10, lines.length); i++) {
@@ -69,9 +80,12 @@ export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
 
     // If line looks like a name (2-3 words, capitalized, no numbers)
     // Also match ALL CAPS names like "JOHN DOE"
-    if (/^[A-ZÄÖÜ][a-zäöü]+ [A-ZÄÖÜ][a-zäöü]+( [A-ZÄÖÜ][a-zäöü]+)?$/.test(line) ||
-        /^[A-ZÄÖÜ]{2,} [A-ZÄÖÜ]{2,}( [A-ZÄÖÜ]{2,})?$/.test(line)) {
-      const nameParts = line.split(' ');
+    // Also match spaced out names like "M E L I H" by collapsing first
+    const collapsedLine = line.replace(/([A-ZÄÖÜ])\s+([A-ZÄÖÜ])/g, '$1$2');
+
+    if (/^[A-ZÄÖÜ][a-zäöü]+ [A-ZÄÖÜ][a-zäöü]+( [A-ZÄÖÜ][a-zäöü]+)?$/.test(collapsedLine) ||
+        /^[A-ZÄÖÜ]{2,}\s+[A-ZÄÖÜ]{2,}(\s+[A-ZÄÖÜ]{2,})?$/.test(collapsedLine)) {
+      const nameParts = collapsedLine.split(/\s+/);
       if (nameParts.length === 2) {
         info.firstName = nameParts[0];
         info.lastName = nameParts[1];
@@ -113,7 +127,7 @@ export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
 
   // Extract address components
   const addressRegex = /(\d{4,5})\s+([A-ZÄÖÜ][a-zäöü]+(?:\s+[A-ZÄÖÜ][a-zäöü]+)*)/g;
-  const addressMatches = text.match(addressRegex);
+  const addressMatches = normalizedText.match(addressRegex);
   if (addressMatches && addressMatches.length > 0) {
     const match = addressMatches[0];
     const parts = match.split(/\s+/);
@@ -122,11 +136,31 @@ export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
   }
 
   // Extract canton
-  const cantonMatch = text.match(/(?:kanton|canton)\s*:?\s*([A-Z]{2})/i);
+  const cantonMatch = normalizedText.match(/(?:kanton|canton)\s*:?\s*([A-Z]{2})/i);
   if (cantonMatch) {
     const normalized = normalizeCanton(cantonMatch[1]);
     if (normalized) {
       info.canton = normalized;
+    }
+  }
+
+  // Fallback: Try to extract name from normalized text by looking for common patterns
+  if (!info.firstName || !info.lastName) {
+    // Look for two consecutive capitalized words in normalized text
+    // Try multiple matches to skip header words
+    const allMatches = normalizedText.matchAll(/\b([A-ZÄÖÜ]{2,})\s+([A-ZÄÖÜ]{2,})\b/g);
+    const skipWords = /^(SY|ST|SYSTEM|ENGINEER|KONTAKT|DATEN|KOMPETENZEN|SPRAC|BERUF|ERFAHRUNG|AUSBILDUNG|EXPERIENCE|EDUCATION|SKILLS|ZIEL|SETZUNG)$/i;
+
+    for (const nameMatch of allMatches) {
+      if (!skipWords.test(nameMatch[1]) && !skipWords.test(nameMatch[2])) {
+        // Additional check: reasonable name length (3-15 chars each)
+        if (nameMatch[1].length >= 3 && nameMatch[1].length <= 15 &&
+            nameMatch[2].length >= 3 && nameMatch[2].length <= 15) {
+          if (!info.firstName) info.firstName = nameMatch[1];
+          if (!info.lastName) info.lastName = nameMatch[2];
+          break;
+        }
+      }
     }
   }
 

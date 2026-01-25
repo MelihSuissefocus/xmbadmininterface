@@ -5,7 +5,7 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
   
-  const isPublicRoute = 
+  const isPublicRoute =
     nextUrl.pathname === "/login" ||
     nextUrl.pathname === "/forgot-password" ||
     nextUrl.pathname === "/reset-password" ||

@@ -19,6 +19,7 @@ export interface MappingResult {
 /**
  * Maps a label/value pair to a candidate form field
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mapToFormField(label: string, _value: string): MappingResult {
   const normalizedLabel = label.toLowerCase().trim();
 
