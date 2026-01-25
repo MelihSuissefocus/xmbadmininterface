@@ -7,8 +7,13 @@ import { compare } from "bcryptjs";
 import { z } from "zod";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   pages: {
     signIn: "/login",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -22,6 +27,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
       }
       return session;
+    },
+    async authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isPublicRoute =
+        nextUrl.pathname === "/login" ||
+        nextUrl.pathname === "/forgot-password" ||
+        nextUrl.pathname === "/reset-password";
+      
+      if (isPublicRoute) return true;
+      return isLoggedIn;
     },
   },
   providers: [
@@ -56,4 +71,3 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
 });
-

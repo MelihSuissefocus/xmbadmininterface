@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# XMB Admin Portal
 
-## Getting Started
+Admin Portal für XMB Group - gebaut mit Next.js 16, Drizzle ORM, und Neon PostgreSQL.
 
-First, run the development server:
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Sprache:** TypeScript
+- **Styling:** Tailwind CSS
+- **UI Components:** shadcn/ui (Radix UI)
+- **Datenbank:** PostgreSQL (Neon Serverless)
+- **ORM:** Drizzle ORM
+- **Auth:** Auth.js v5 (NextAuth)
+
+## Lokale Entwicklung
+
+### Voraussetzungen
+
+- Node.js 20+
+- npm oder pnpm
+- Neon PostgreSQL Datenbank
+
+### Setup
+
+1. **Dependencies installieren:**
+
+```bash
+npm install
+```
+
+2. **Umgebungsvariablen konfigurieren:**
+
+Erstelle eine `.env.local` Datei:
+
+```env
+# Database (Neon PostgreSQL)
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+
+# Auth.js (NextAuth v5) - generiere mit: openssl rand -base64 32
+AUTH_SECRET="your-secret-key"
+```
+
+3. **Datenbank-Migrationen ausführen:**
+
+```bash
+npm run db:push
+```
+
+4. **Entwicklungsserver starten:**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Vercel Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Wichtig: Root Directory
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Bei Vercel muss das **Root Directory** auf `admin-xmb` gesetzt werden, da sich das Projekt in einem Unterordner befindet.
 
-## Learn More
+### Umgebungsvariablen in Vercel
 
-To learn more about Next.js, take a look at the following resources:
+Füge folgende Environment Variables in den Vercel Project Settings hinzu:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Beschreibung |
+|----------|-------------|
+| `DATABASE_URL` | Neon PostgreSQL Connection String |
+| `AUTH_SECRET` | Auth.js Secret (min. 32 Zeichen) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Deployment Steps
 
-## Deploy on Vercel
+1. Repository mit Vercel verbinden
+2. **Root Directory:** `admin-xmb` setzen
+3. **Framework Preset:** Next.js (automatisch erkannt)
+4. Environment Variables konfigurieren
+5. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Nach dem ersten Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Datenbank-Schema initialisieren:
+
+```bash
+npx drizzle-kit push
+```
+
+Oder im Vercel Dashboard unter "Functions" → "Terminal":
+
+```bash
+npm run db:push
+```
+
+## Datenbank
+
+### Schema generieren
+
+```bash
+npm run db:generate
+```
+
+### Schema pushen
+
+```bash
+npm run db:push
+```
+
+## Scripts
+
+| Script | Beschreibung |
+|--------|-------------|
+| `npm run dev` | Startet den Entwicklungsserver |
+| `npm run build` | Erstellt den Production Build |
+| `npm run start` | Startet den Production Server |
+| `npm run lint` | Führt ESLint aus |
+| `npm run db:generate` | Generiert Drizzle Migrationen |
+| `npm run db:push` | Pusht Schema zur Datenbank |
+
+## Projektstruktur
+
+```
+src/
+├── actions/       # Server Actions
+├── app/           # App Router Pages
+├── components/    # React Components
+│   └── ui/        # shadcn/ui Components
+├── db/            # Drizzle Schema & Connection
+└── lib/           # Utilities & Constants
+```
