@@ -47,7 +47,7 @@ export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
   // Try to find name in first few lines
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
+  for (let i = 0; i < Math.min(10, lines.length); i++) {
     const line = lines[i];
 
     // Skip if it's an email or phone
@@ -68,7 +68,9 @@ export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
     }
 
     // If line looks like a name (2-3 words, capitalized, no numbers)
-    if (/^[A-ZÄÖÜ][a-zäöü]+ [A-ZÄÖÜ][a-zäöü]+( [A-ZÄÖÜ][a-zäöü]+)?$/.test(line)) {
+    // Also match ALL CAPS names like "JOHN DOE"
+    if (/^[A-ZÄÖÜ][a-zäöü]+ [A-ZÄÖÜ][a-zäöü]+( [A-ZÄÖÜ][a-zäöü]+)?$/.test(line) ||
+        /^[A-ZÄÖÜ]{2,} [A-ZÄÖÜ]{2,}( [A-ZÄÖÜ]{2,})?$/.test(line)) {
       const nameParts = line.split(' ');
       if (nameParts.length === 2) {
         info.firstName = nameParts[0];
@@ -78,6 +80,33 @@ export function extractPersonalInfo(text: string): Partial<CandidateFormData> {
         info.firstName = `${nameParts[0]} ${nameParts[1]}`;
         info.lastName = nameParts[2];
         break;
+      }
+    }
+
+    // NEW: Check if this line and the next line together form a name
+    // This handles cases where "MELIH" is on one line and "ÖZKAN" is on the next
+    if (i < lines.length - 1) {
+      const currentLine = line;
+      const nextLine = lines[i + 1];
+
+      // Skip if either is an email/phone
+      if (emailRegex.test(nextLine) || phoneRegex.test(nextLine)) continue;
+
+      // Check if current line is a single capitalized word (first name)
+      // and next line is a single capitalized word (last name)
+      const isSingleCapWord = /^[A-ZÄÖÜ]{2,}$/;
+      if (isSingleCapWord.test(currentLine) && isSingleCapWord.test(nextLine)) {
+        // Skip if they look like section headers (too long or common keywords)
+        const skipWords = /^(SYSTEM|ENGINEER|KONTAKT|DATEN|KOMPETENZEN|SPRACH|KENNTNISSE|BERUF|ERFAHRUNG|AUSBILDUNG|EDUCATION|EXPERIENCE|SKILLS)$/i;
+        if (!skipWords.test(currentLine) && !skipWords.test(nextLine)) {
+          // Check reasonable name length (2-20 chars each)
+          if (currentLine.length >= 2 && currentLine.length <= 20 &&
+              nextLine.length >= 2 && nextLine.length <= 20) {
+            info.firstName = currentLine;
+            info.lastName = nextLine;
+            break;
+          }
+        }
       }
     }
   }
@@ -405,9 +434,17 @@ function extractSection(text: string, headers: string[]): string | null {
 
   for (const line of lines) {
     const trimmed = line.trim().toLowerCase();
+    // Normalize by removing extra spaces (handles "B E R U F S E R FA H R U N G" -> "berufserfahrung")
+    const normalized = trimmed.replace(/\s+/g, '');
 
-    // Check if this is a section header
-    if (headers.some(h => trimmed.startsWith(h) || trimmed === h)) {
+    // Check if this is a section header (match both original and normalized)
+    const isHeader = headers.some(h => {
+      const normalizedHeader = h.toLowerCase().replace(/\s+/g, '');
+      return trimmed.startsWith(h) || trimmed === h ||
+             normalized.startsWith(normalizedHeader) || normalized === normalizedHeader;
+    });
+
+    if (isHeader) {
       inSection = true;
       continue;
     }
