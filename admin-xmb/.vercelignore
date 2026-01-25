@@ -1,7 +1,0 @@
-scripts/
-drizzle/
-*.md
-.env.local
-.env.example
-tsconfig.json.bak
-
