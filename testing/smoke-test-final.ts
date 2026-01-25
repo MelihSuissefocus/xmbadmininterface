@@ -86,6 +86,7 @@ async function testExtraction(): Promise<CandidateAutoFillDraft> {
   }
 
   const fileBuffer = fs.readFileSync(TEST_PDF_PATH);
+  const base64 = fileBuffer.toString('base64');
   console.log(`  File: testcv.pdf (${fileBuffer.length} bytes)`);
 
   // Capture console errors to check for SSR issues
@@ -103,7 +104,7 @@ async function testExtraction(): Promise<CandidateAutoFillDraft> {
 
     console.log('  Extracting data...');
     const draft = await extractFromCV(
-      fileBuffer,
+      base64,
       'testcv.pdf',
       'pdf',
       fileBuffer.length

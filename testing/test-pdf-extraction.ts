@@ -62,8 +62,9 @@ async function testPDFExtraction() {
     console.log('\n🔍 Testing full extraction pipeline...');
     const { extractFromCV } = await import('../src/actions/cv-extraction');
 
+    const base64 = fileBuffer.toString('base64');
     const draft = await extractFromCV(
-      fileBuffer,
+      base64,
       'testcv.pdf',
       'pdf',
       fileBuffer.length
