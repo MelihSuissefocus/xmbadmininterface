@@ -3,7 +3,7 @@
  * Extracts text from PDF files using pdf-parse
  */
 
-import { ensureDOMMatrix } from "@/lib/polyfills/dommatrix";
+import { ensureCanvasPolyfills } from "@/lib/polyfills/dommatrix";
 
 export interface ExtractedText {
   text: string;
@@ -15,11 +15,12 @@ export interface ExtractedText {
  * Extracts text from a PDF buffer
  */
 export async function extractTextFromPDF(buffer: Buffer): Promise<ExtractedText> {
-  ensureDOMMatrix();
+  ensureCanvasPolyfills();
   const { PDFParse } = await import("pdf-parse");
 
   try {
-    const parser = new PDFParse({ data: buffer });
+    const data = new Uint8Array(buffer);
+    const parser = new PDFParse({ data });
     const textResult = await parser.getText();
 
     return {
