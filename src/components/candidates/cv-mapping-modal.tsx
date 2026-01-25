@@ -12,6 +12,8 @@ import {
   Check,
   XCircle,
   Bookmark,
+  Info,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -211,6 +213,12 @@ export function CVMappingModal({
           <Badge variant="outline" className="text-xs">
             {provider} v{extractionVersion}
           </Badge>
+          {extractionVersion.includes("llm") && (
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              KI-unterstützt
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-4 text-xs">
@@ -464,11 +472,16 @@ function ExtractedFieldRow({
 
       {isEvidenceExpanded && field.evidence && (
         <div className="mt-2 pt-2 border-t border-current/10 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 mb-1">
+            <Info className="h-3 w-3" />
+            <span className="font-medium">Warum wurde dieser Wert extrahiert?</span>
+          </div>
           <div className="flex gap-4">
-            <span>Seite {field.evidence.page}</span>
-            <span>Konfidenz: {(field.evidence.confidence * 100).toFixed(0)}%</span>
+            <span>📄 Seite {field.evidence.page}</span>
+            <span>📊 Konfidenz: {(field.evidence.confidence * 100).toFixed(0)}%</span>
           </div>
           <div className="mt-1 p-2 bg-white/50 dark:bg-black/20 rounded text-xs font-mono break-all">
+            <span className="text-muted-foreground">Gefunden im Text: </span>
             &quot;{field.evidence.exactText}&quot;
           </div>
         </div>

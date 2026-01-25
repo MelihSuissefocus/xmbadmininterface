@@ -1,4 +1,4 @@
-# CV Extraction System v2.1 (Production Hardened)
+# CV Extraction System v2.2 (LLM-Enhanced)
 
 ## Definition of Done Checklist
 
@@ -9,7 +9,7 @@
 | **Per-user daily quota** | ✅ | 100 analyses/day via `checkDailyQuota()` |
 | **Per-tenant configurable quota** | ✅ | Stored in `tenant_quota_config` table, default 500/day |
 | **SHA256 deduplication** | ✅ | File hash computed, cached results reused for 1 hour |
-| **Overall analysis timeout** | ✅ | 30s hard limit enforced via `AbortController` |
+| **Overall analysis timeout** | ✅ | 60s hard limit enforced via `AbortController` |
 | **Poller max wait** | ✅ | 25s limit in Azure DI client |
 | **Structured error handling** | ✅ | `CVError` class with user-safe messages (DE) and error codes |
 | **Auth required for /api/cv-extract** | ✅ | No public API route exists; server actions require session + role check |
@@ -19,6 +19,10 @@
 | **Non-PII analytics** | ✅ | Daily aggregates in `cv_analytics_daily` table |
 | **No file storage** | ✅ | Files processed in memory only |
 | **AV scan hook placeholder** | ✅ | See [Placeholders](#placeholders) section |
+| **LLM integration (v2.2)** | ✅ | Azure OpenAI GPT-4.1-nano for semantic extraction |
+| **No hallucinations** | ✅ | Evidence-based extraction with validation |
+| **Name vs title filter** | ✅ | Job titles rejected as person names |
+| **Cost control** | ✅ | Text packing to <8k tokens per CV |
 
 ## Breaking Changes (v2.0 → v2.1)
 
@@ -87,15 +91,26 @@ This document describes the CV auto-fill feature powered by **Azure AI Document 
 Add these to your `.env.local`:
 
 ```env
-# Azure Document Intelligence Configuration
+# Azure Document Intelligence Configuration (Required)
 AZURE_DI_ENDPOINT=https://documentai-xmb.cognitiveservices.azure.com/
 AZURE_DI_KEY=<your-api-key>
+
+# Azure OpenAI Configuration (Optional - for LLM-enhanced extraction)
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_KEY=<your-openai-key>
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1-nano
+AZURE_OPENAI_API_VERSION=2024-08-01-preview  # Optional, default: 2024-08-01-preview
+
+# Feature Flags
+CV_LLM_ENABLED=true  # Set to true to enable LLM extraction
 
 # Optional: Log level (debug, info, warn, error)
 LOG_LEVEL=info
 ```
 
-**Note:** Use `key1` or `key2` from your Azure resource for `AZURE_DI_KEY`.
+**Notes:**
+- Use `key1` or `key2` from your Azure DI resource for `AZURE_DI_KEY`
+- The LLM extraction is **optional** - set `CV_LLM_ENABLED=false` or omit OpenAI vars to use rule-based extraction only
 
 ## Security Features
 
@@ -373,6 +388,56 @@ interface JobStatusResult {
    VALUES ('your-tenant-uuid', 1000);
    ```
 
+## LLM-Enhanced Extraction (v2.2)
+
+### How It Works
+
+When `CV_LLM_ENABLED=true` and Azure OpenAI is configured:
+
+1. **Azure DI** processes the document → produces `DocumentRep` with OCR, layout, polygons
+2. **Packing module** compresses content to ~8k tokens (header lines, contact info, sections)
+3. **Azure OpenAI GPT-4.1-nano** extracts structured data with evidence references
+4. **Validation** filters out job titles as names, normalizes phone/email, checks evidence
+5. **Merge** combines LLM results with deterministic email/phone extraction (deterministic takes precedence)
+6. **Scoring** assigns confidence scores: ≥0.90 autofill, 0.70-0.89 review, <0.70 skip
+
+### Cost Control
+
+Target: **≤ CHF 0.10 per CV**
+
+Achieved via text packing:
+- Header lines: max 40 lines from first page
+- Contact lines: max 30 lines containing email/phone/URL
+- Key-value pairs: max 40 relevant KVPs
+- Sections: max 250 lines total across experience/education/skills/languages
+- Hard cap: 8,000 tokens input
+
+### No Hallucinations Guarantee
+
+- Every extracted value **must** reference a `lineId` from the packed input
+- Values without evidence are filtered or flagged for review
+- Job titles (e.g., "System Engineer") are never accepted as names
+- If uncertain, LLM outputs `null` and adds field to `needs_review_fields`
+
+### Fallback Behavior
+
+If LLM fails (timeout, auth error, invalid response):
+1. Deterministic email/phone extraction is preserved
+2. All other fields are marked as `needs_review`
+3. User can manually complete the form
+
+### Testing
+
+Run LLM extraction tests:
+```bash
+npm test -- src/lib/__tests__/llm-extraction.test.ts
+```
+
+Tests cover:
+- Name vs job title misclassification prevention
+- Experience extraction from section input
+- Schema validation and evidence requirements
+
 ## Limitations
 
 1. **Scanned PDFs:** While Azure DI handles OCR, very low-quality scans may produce poor results
@@ -381,6 +446,7 @@ interface JobStatusResult {
 4. **Complex tables:** Nested or merged cells may not extract perfectly
 5. **Handwritten content:** Not supported
 6. **Rate limits:** Per-user limits may affect power users during bulk uploads
+7. **LLM costs:** ~CHF 0.05-0.10 per CV with GPT-4.1-nano
 
 ## Support
 

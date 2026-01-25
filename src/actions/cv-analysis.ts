@@ -6,6 +6,7 @@ import { cvAnalysisJobs, cvAnalyticsDaily, tenantQuotaConfig, users } from "@/db
 import { eq, and, desc, sql } from "drizzle-orm";
 import { analyzeDocument, AzureDIError } from "@/lib/azure-di/client";
 import { mapDocumentToCandidate, type MapperConfig } from "@/lib/azure-di/data-mapper";
+import { extractWithLlm } from "@/lib/azure-di/llm-extraction";
 import type { CandidateAutoFillDraftV2 } from "@/lib/azure-di/types";
 import { validateFileMagicBytes, sanitizeFilename, validateFileSize, getMimeTypeFromExtension } from "@/lib/file-validation";
 import { checkRateLimit, checkDailyQuota, checkTenantQuota, CV_ANALYSIS_RATE_LIMIT, CV_DAILY_QUOTA, DEFAULT_TENANT_DAILY_QUOTA } from "@/lib/rate-limit";
@@ -16,7 +17,7 @@ import { CVError, wrapError, isCVError } from "@/lib/cv-errors";
 import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
 import { getExtractionConfigForJob } from "./extraction-config";
 
-const OVERALL_ANALYSIS_TIMEOUT_MS = 30000;
+const OVERALL_ANALYSIS_TIMEOUT_MS = 60000;
 const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
 interface ActionResult<T = unknown> {
@@ -301,7 +302,7 @@ async function processCvAnalysisJob(
       skillAliases: new Map(Object.entries(extractionConfig.skillAliases)),
     };
 
-    const result = mapDocumentToCandidate(
+    const fallbackResult = mapDocumentToCandidate(
       docRep,
       fileName,
       fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
@@ -310,8 +311,29 @@ async function processCvAnalysisJob(
       mapperConfig
     );
 
+    const llmPipelineResult = await extractWithLlm(
+      docRep,
+      fileName,
+      fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+      fileSize,
+      latencyMs,
+      fallbackResult
+    );
+
+    const result = llmPipelineResult.draft;
     autofillCount = result.filledFields?.length ?? 0;
     reviewCount = result.ambiguousFields?.length ?? 0;
+
+    if (llmPipelineResult.llmUsed) {
+      cvLogger.info("LLM extraction completed", {
+        jobId,
+        llmSuccess: llmPipelineResult.llmSuccess,
+        llmLatencyMs: llmPipelineResult.llmLatencyMs,
+        promptTokens: llmPipelineResult.promptTokens,
+        completionTokens: llmPipelineResult.completionTokens,
+        action: "processCvAnalysisJob",
+      });
+    }
 
     metrics.increment(CV_METRICS.ANALYSIS_SUCCESS);
     metrics.recordHistogram(CV_METRICS.ANALYSIS_LATENCY_MS, latencyMs);
