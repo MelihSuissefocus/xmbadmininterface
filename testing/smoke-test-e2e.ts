@@ -14,7 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 
-async function uploadPDF(): Promise<{buffer: Buffer; fileName: string; fileType: string; fileSize: number}> {
+async function uploadPDF(): Promise<{base64: string; fileName: string; fileType: string; fileSize: number}> {
   console.log('\n📤 Step 2: Upload PDF via extraction action');
 
   const testPdfPath = path.join(__dirname, 'testcv.pdf');
@@ -23,17 +23,18 @@ async function uploadPDF(): Promise<{buffer: Buffer; fileName: string; fileType:
   }
 
   const buffer = fs.readFileSync(testPdfPath);
+  const base64 = buffer.toString('base64');
   console.log(`  ✓ Read test file (${buffer.length} bytes)`);
 
   return {
-    buffer,
+    base64,
     fileName: 'testcv.pdf',
     fileType: 'pdf',
     fileSize: buffer.length
   };
 }
 
-async function extractFromCV(uploadResult: {buffer: Buffer; fileName: string; fileType: string; fileSize: number}): Promise<{filledFields: {targetField: string; extractedValue: unknown}[]}> {
+async function extractFromCV(uploadResult: {base64: string; fileName: string; fileType: string; fileSize: number}): Promise<{filledFields: {targetField: string; extractedValue: unknown}[]}> {
   console.log('\n🔍 Step 3: Extract data from PDF');
 
   // Load environment for DB access
@@ -57,7 +58,7 @@ async function extractFromCV(uploadResult: {buffer: Buffer; fileName: string; fi
     const { extractFromCV } = await import('../src/actions/cv-extraction');
 
     const draft = await extractFromCV(
-      uploadResult.buffer,
+      uploadResult.base64,
       uploadResult.fileName,
       uploadResult.fileType,
       uploadResult.fileSize

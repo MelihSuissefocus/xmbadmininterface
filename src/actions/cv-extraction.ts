@@ -22,7 +22,7 @@ import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
 import { generateSuggestedTargets } from "@/lib/cv-autofill/field-mapper";
 
 export async function extractFromCV(
-  buffer: Buffer,
+  base64: string,
   fileName: string,
   fileType: string,
   fileSize: number
@@ -30,6 +30,9 @@ export async function extractFromCV(
   const startTime = Date.now();
 
   try {
+    // Convert base64 back to Buffer on the server
+    const buffer = Buffer.from(base64, "base64");
+    
     let extractedText = "";
     let pageCount = 0;
     let extractionMethod: "text" | "ocr" = "text";

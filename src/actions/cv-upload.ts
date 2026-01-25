@@ -9,7 +9,7 @@ import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
 
 export interface UploadResult {
   success: boolean;
-  buffer?: Buffer;
+  base64?: string;
   fileName?: string;
   fileType?: string;
   fileSize?: number;
@@ -63,13 +63,13 @@ export async function uploadCV(formData: FormData): Promise<UploadResult> {
       };
     }
 
-    // Convert file to buffer
+    // Convert file to base64 for safe transport between client/server
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
 
     return {
       success: true,
-      buffer,
+      base64,
       fileName: file.name,
       fileType: fileExtension,
       fileSize: file.size,

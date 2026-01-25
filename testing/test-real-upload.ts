@@ -51,7 +51,7 @@ async function testRealUpload() {
     const { extractFromCV } = await import('../src/actions/cv-extraction');
 
     const draft = await extractFromCV(
-      uploadResult.buffer!,
+      uploadResult.base64!,
       uploadResult.fileName!,
       uploadResult.fileType!,
       uploadResult.fileSize!
