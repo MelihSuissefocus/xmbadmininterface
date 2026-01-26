@@ -79,6 +79,8 @@ describe("LLM Schema Validation", () => {
           endDate: "present",
           location: "Zürich",
           description: "Full-stack development",
+          responsibilities: [],
+          technologies: [],
           evidence: [{ lineId: "p1_l20", page: 1, text: "Tech AG, Senior Developer" }],
         },
       ],
@@ -91,6 +93,7 @@ describe("LLM Schema Validation", () => {
           evidence: [{ lineId: "p2_l1", page: 2, text: "ETH Zürich MSc" }],
         },
       ],
+      unmapped_segments: [],
       metadata: {
         needs_review_fields: [],
         notes: [],
@@ -170,6 +173,8 @@ describe("LLM Schema Validation", () => {
             title: "Developer",
             startDate: "2020",
             endDate: "present",
+            responsibilities: [],
+            technologies: [],
             evidence: [], // No evidence
           },
           {
@@ -177,6 +182,8 @@ describe("LLM Schema Validation", () => {
             title: "Engineer",
             startDate: "2018",
             endDate: "2020",
+            responsibilities: [],
+            technologies: [],
             evidence: [{ lineId: "p1_l25", page: 1, text: "Other AG" }],
           },
         ],
@@ -238,6 +245,8 @@ describe("Experience Extraction", () => {
           endDate: "present",
           location: "Zürich",
           description: "Led frontend team",
+          responsibilities: [],
+          technologies: [],
           evidence: [
             { lineId: "p1_l30", page: 1, text: "Google Switzerland" },
             { lineId: "p1_l31", page: 1, text: "Senior Software Engineer" },
@@ -250,6 +259,8 @@ describe("Experience Extraction", () => {
           endDate: "2019-12",
           location: "Zürich",
           description: "Backend development",
+          responsibilities: [],
+          technologies: [],
           evidence: [
             { lineId: "p1_l40", page: 1, text: "Credit Suisse" },
             { lineId: "p1_l41", page: 1, text: "2017 - 2019" },
@@ -257,6 +268,7 @@ describe("Experience Extraction", () => {
         },
       ],
       education: [],
+      unmapped_segments: [],
       metadata: { needs_review_fields: [], notes: [] },
     };
 

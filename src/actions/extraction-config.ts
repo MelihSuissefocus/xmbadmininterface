@@ -109,8 +109,9 @@ export async function recordExtractionFeedback(
   targetField: string,
   extractedValue: string | null,
   userValue: string | null,
-  action: "confirm" | "edit" | "reject",
-  originalConfidence: number
+  action: "confirm" | "edit" | "reject" | "reassign",
+  originalConfidence: number,
+  newTargetField?: string | null
 ): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -121,13 +122,63 @@ export async function recordExtractionFeedback(
     jobId,
     targetField,
     extractedValue,
-    userValue,
+    userValue: action === "reassign" && newTargetField ? newTargetField : userValue,
     action,
     originalConfidence: Math.round(originalConfidence * 100),
     createdBy: session.user.id,
   });
 
+  // Bei reassign: Speichere auch ein neues Synonym für zukünftige Extraktionen
+  if (action === "reassign" && newTargetField && extractedValue) {
+    // Versuche das Original-Label aus dem extractedValue zu extrahieren
+    // Das hilft dem System bei zukünftigen Zuordnungen
+    await addFieldSynonym(targetField, newTargetField, "de");
+  }
+
   return { success: true, message: "Feedback gespeichert" };
+}
+
+/**
+ * Speichert eine Feld-Neuzuweisung wenn die KI das falsche Zielfeld identifiziert hat.
+ * Der Benutzer kann das extrahierte Feld einem anderen offenen Feld zuweisen.
+ */
+export async function recordFieldReassignment(
+  jobId: string | null,
+  originalTargetField: string,
+  newTargetField: string,
+  extractedValue: string,
+  originalLabel: string | null,
+  originalConfidence: number,
+  rememberMapping: boolean = false
+): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Nicht autorisiert" };
+  }
+
+  // Speichere das Reassignment-Feedback
+  await db.insert(cvExtractionFeedback).values({
+    jobId,
+    targetField: originalTargetField,
+    extractedValue,
+    userValue: `REASSIGN:${newTargetField}`,
+    action: "reassign",
+    originalConfidence: Math.round(originalConfidence * 100),
+    createdBy: session.user.id,
+  });
+
+  // Wenn der User die Zuordnung merken möchte, speichere ein Synonym
+  if (rememberMapping && originalLabel) {
+    await addFieldSynonym(originalLabel.toLowerCase().trim(), newTargetField, "de");
+  }
+
+  revalidatePath("/dashboard/candidates");
+  return { 
+    success: true, 
+    message: rememberMapping 
+      ? "Neuzuweisung gespeichert – das System lernt aus diesem Feedback" 
+      : "Neuzuweisung übernommen" 
+  };
 }
 
 export async function getExtractionConfigForJob(): Promise<{

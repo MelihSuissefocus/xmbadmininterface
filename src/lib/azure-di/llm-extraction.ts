@@ -129,8 +129,11 @@ function computeFieldScore(
   isFlagged: boolean,
   isValidated: boolean
 ): { score: number; status: "autofill" | "review" | "skip" } {
+  // CRITICAL FIX: NEVER skip fields with a value!
+  // Even without evidence, if we have data, it should go to review
   if (!hasEvidence) {
-    return { score: 0, status: "skip" };
+    // Changed from skip to review - let the user decide!
+    return { score: 0.3, status: "review" };
   }
 
   let score = 0.75;
@@ -153,10 +156,10 @@ function computeFieldScore(
 
   if (score >= 0.90) {
     return { score, status: "autofill" };
-  } else if (score >= 0.70) {
-    return { score, status: "review" };
   } else {
-    return { score, status: "skip" };
+    // CRITICAL FIX: Changed threshold from 0.70 to 0.30
+    // NEVER skip data - if we have it, let the user review it!
+    return { score, status: "review" };
   }
 }
 
@@ -378,16 +381,27 @@ function buildDraftFromLlmResult(
   }
 
   if (llmResult.experience.length > 0) {
-    const expArray = llmResult.experience.map((e) => ({
-      company: e.company || "",
-      role: e.title || "",
-      startMonth: "",
-      startYear: e.startDate || "",
-      endMonth: "",
-      endYear: e.endDate === "present" ? "" : (e.endDate || ""),
-      current: e.endDate === "present",
-      description: e.description || "",
-    }));
+    const expArray = llmResult.experience.map((e) => {
+      // CRITICAL FIX: Use responsibilities array if available
+      const responsibilities = (e as Record<string, unknown>).responsibilities as string[] | undefined;
+      
+      // Combine responsibilities into description
+      let description = e.description || "";
+      if (responsibilities && responsibilities.length > 0) {
+        description = responsibilities.map(r => `• ${r}`).join("\n");
+      }
+      
+      return {
+        company: e.company || "",
+        role: e.title || "",
+        startMonth: "",
+        startYear: e.startDate || "",
+        endMonth: "",
+        endYear: e.endDate === "present" ? "" : (e.endDate || ""),
+        current: e.endDate === "present",
+        description,
+      };
+    });
     const firstWithEvidence = llmResult.experience.find((e) => e.evidence.length > 0);
     const evidence = firstWithEvidence
       ? llmEvidenceToFieldEvidence(firstWithEvidence.evidence, packedInput, 0.85)
@@ -423,10 +437,48 @@ function buildDraftFromLlmResult(
     });
   }
 
+  // CRITICAL FIX: Convert unmapped_segments to unmappedItems
+  const unmappedItems: CandidateAutoFillDraftV2["unmappedItems"] = [];
+  
+  if (llmResult.unmapped_segments && llmResult.unmapped_segments.length > 0) {
+    for (const segment of llmResult.unmapped_segments) {
+      // Map detected_type to category
+      const categoryMap: Record<string, CandidateAutoFillDraftV2["unmappedItems"][0]["category"]> = {
+        date: "date",
+        skill: "skill",
+        credential: "education",
+        personal: "contact",
+        job_details: "experience",
+        education_details: "education",
+        other: "other",
+      };
+      
+      const line = segment.line_reference 
+        ? findLineFromEvidence(packedInput, { lineId: segment.line_reference, page: 1, text: segment.original_text })
+        : undefined;
+      
+      unmappedItems.push({
+        extractedLabel: segment.suggested_parent || segment.suggested_field || undefined,
+        extractedValue: segment.original_text,
+        category: categoryMap[segment.detected_type] || "other",
+        evidence: {
+          page: line?.page || 1,
+          exactText: segment.original_text.substring(0, 200),
+          confidence: segment.confidence,
+        },
+      });
+    }
+    
+    cvLogger.info("Unmapped segments converted", {
+      action: "buildDraftFromLlmResult",
+      count: unmappedItems.length,
+    });
+  }
+
   return {
     filledFields,
     ambiguousFields,
-    unmappedItems: [],
+    unmappedItems,
     metadata: {
       fileName,
       fileType,

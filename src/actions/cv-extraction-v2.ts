@@ -182,8 +182,13 @@ function convertToDraft(
   const ambiguousFields: AmbiguousField[] = [];
   const unmappedItems: UnmappedItem[] = [];
 
+  // CRITICAL FIX: Low confidence fields go to ambiguousFields with proper structure
+  // BUT we ALSO add them to filledFields so they're not dropped on submit!
   if (data.person.firstName) {
-    const confidence = result.flaggedFields.includes("firstName") ? "low" : "high";
+    const isFlagged = result.flaggedFields.includes("firstName");
+    const confidence = isFlagged ? "low" : "high";
+    
+    // ALWAYS add to filledFields - user can override if needed
     filledFields.push({
       targetField: "firstName",
       extractedValue: data.person.firstName,
@@ -193,10 +198,30 @@ function convertToDraft(
         page: data.person.evidence[0]?.page,
       },
     });
+    
+    // If flagged, ALSO add to ambiguousFields for review UI
+    if (isFlagged) {
+      ambiguousFields.push({
+        extractedLabel: "firstName",
+        extractedValue: data.person.firstName,
+        suggestedTargets: [{
+          targetField: "firstName",
+          confidence: "low",
+          reason: "Extrahierter Wert könnte ungenau sein - bitte überprüfen",
+        }],
+        source: {
+          text: data.person.evidence[0]?.text || data.person.firstName,
+          page: data.person.evidence[0]?.page,
+        },
+      });
+    }
   }
 
   if (data.person.lastName) {
-    const confidence = result.flaggedFields.includes("lastName") ? "low" : "high";
+    const isFlagged = result.flaggedFields.includes("lastName");
+    const confidence = isFlagged ? "low" : "high";
+    
+    // ALWAYS add to filledFields
     filledFields.push({
       targetField: "lastName",
       extractedValue: data.person.lastName,
@@ -206,6 +231,23 @@ function convertToDraft(
         page: data.person.evidence[0]?.page,
       },
     });
+    
+    // If flagged, ALSO add to ambiguousFields
+    if (isFlagged) {
+      ambiguousFields.push({
+        extractedLabel: "lastName",
+        extractedValue: data.person.lastName,
+        suggestedTargets: [{
+          targetField: "lastName",
+          confidence: "low",
+          reason: "Extrahierter Wert könnte ungenau sein - bitte überprüfen",
+        }],
+        source: {
+          text: data.person.evidence[0]?.text || data.person.lastName,
+          page: data.person.evidence[0]?.page,
+        },
+      });
+    }
   }
 
   if (data.contact.email) {
@@ -323,18 +365,35 @@ function convertToDraft(
   }
 
   if (data.experience.length > 0) {
-    const experiences = data.experience.map((exp) => ({
-      role: exp.title || "",
-      company: exp.company || "",
-      startMonth: extractMonth(exp.startDate),
-      startYear: extractYear(exp.startDate),
-      endMonth: extractMonth(exp.endDate),
-      endYear: extractYear(exp.endDate),
-      current:
-        exp.endDate?.toLowerCase().includes("present") ||
-        exp.endDate?.toLowerCase().includes("heute"),
-      description: exp.description || "",
-    }));
+    const experiences = data.experience.map((exp) => {
+      // CRITICAL FIX: Use responsibilities array if available, fallback to description
+      const responsibilities = (exp as Record<string, unknown>).responsibilities as string[] | undefined;
+      const technologies = (exp as Record<string, unknown>).technologies as string[] | undefined;
+      
+      // Combine responsibilities into description if available
+      let description = exp.description || "";
+      if (responsibilities && responsibilities.length > 0) {
+        description = responsibilities.join("\n• ");
+        if (!description.startsWith("•")) {
+          description = "• " + description;
+        }
+      }
+      
+      return {
+        role: exp.title || "",
+        company: exp.company || "",
+        startMonth: extractMonth(exp.startDate),
+        startYear: extractYear(exp.startDate),
+        endMonth: extractMonth(exp.endDate),
+        endYear: extractYear(exp.endDate),
+        current:
+          exp.endDate?.toLowerCase().includes("present") ||
+          exp.endDate?.toLowerCase().includes("heute"),
+        description,
+        // Include technologies as additional info if available
+        technologies: technologies || [],
+      };
+    });
     filledFields.push({
       targetField: "experience",
       extractedValue: experiences,
@@ -381,29 +440,51 @@ function convertToDraft(
 }
 
 function convertUnmappedSegment(segment: UnmappedSegment): UnmappedItem {
+  // CRITICAL FIX: Map ALL categories including new ones
   const categoryMap: Record<string, UnmappedItem["category"]> = {
     date: "date",
     skill: "skill",
     credential: "education",
     personal: "contact",
+    job_details: "experience",       // NEW: Map job_details to experience
+    education_details: "education",  // NEW: Map education_details to education
     other: "other",
   };
 
+  // Get suggested_parent if available (for job_details linking)
+  const suggestedParent = (segment as Record<string, unknown>).suggested_parent as string | undefined;
+  
+  // Build suggested targets - ALWAYS include if we have any hint
+  const suggestedTargets: UnmappedItem["suggestedTargets"] = [];
+  
+  if (segment.suggested_field) {
+    suggestedTargets.push({
+      targetField: segment.suggested_field,
+      confidence: segment.confidence >= 0.7 ? "high" : segment.confidence >= 0.4 ? "medium" : "low",
+      reason: segment.reason,
+    });
+  }
+  
+  // If we have a suggestedParent, add it as a hint for experience/education
+  if (suggestedParent && (segment.detected_type === "job_details" || segment.detected_type === "education_details")) {
+    const targetField = segment.detected_type === "job_details" ? "experience" : "education";
+    // Check if we already have this target
+    if (!suggestedTargets.some(t => t.targetField === targetField)) {
+      suggestedTargets.push({
+        targetField,
+        confidence: "medium",
+        reason: `Gehört wahrscheinlich zu: ${suggestedParent}`,
+      });
+    }
+  }
+
   return {
-    extractedLabel: null,
+    extractedLabel: suggestedParent || null,  // Use suggestedParent as label for context
     extractedValue: segment.original_text,
     category: categoryMap[segment.detected_type] || "other",
-    suggestedTargets: segment.suggested_field
-      ? [
-          {
-            targetField: segment.suggested_field,
-            confidence: segment.confidence >= 0.7 ? "high" : segment.confidence >= 0.4 ? "medium" : "low",
-            reason: segment.reason,
-          },
-        ]
-      : [],
+    suggestedTargets,
     source: {
-      text: segment.original_text.substring(0, 100),
+      text: segment.original_text.substring(0, 200),  // Increased from 100 to capture more context
       position: segment.line_reference || undefined,
     },
   };

@@ -92,7 +92,21 @@ For EVERY piece of data that doesn't directly match a schema field:
 For anything uncertain:
 - "This could be [OPTION_A] or [OPTION_B]"
 - "I choose [OPTION] because [REASON]"
-- "If confidence < 70%, I will add to unmapped_segments instead"`;
+- "If confidence < 70%, I will add to unmapped_segments instead"
+
+### 4. JOB DESCRIPTION SANITY CHECK (CRITICAL!)
+For EACH job entry you extract, VERIFY:
+- "Did I find text BETWEEN '[JOB TITLE]' and the NEXT job entry?"
+- "Is there a description/responsibilities section?"
+- "Did I capture ALL bullet points and paragraphs?"
+
+CHECKLIST (answer in thought_process):
+✓ "For [Company]: Found [N] lines of description. Captured in responsibilities: [YES/NO]"
+✓ "For [Company]: If NO description found, is this normal? [REASON]"
+
+If you see text like "Konzeption und Implementierung..." after a job title:
+→ This is 100% a JOB DESCRIPTION. It MUST go into responsibilities[].
+→ Do NOT skip it. Do NOT summarize excessively. Capture VERBATIM.`;
 
 /**
  * Section 3: Implicit mapping rules - the key to handling indirect data
@@ -127,6 +141,81 @@ When you encounter these labels, apply the following mappings:
 
 IMPORTANT: When you apply an implicit mapping, note it in your _thought_process:
 "Applied implicit mapping: 'Ethnicity: Turkish' → nationality='Turkish'"`;
+
+/**
+ * Section 3.5: AGGRESSIVE JOB DESCRIPTION RETENTION
+ * This is the key to fixing the data loss issue!
+ */
+const SECTION_JOB_DESCRIPTIONS = `
+═══════════════════════════════════════════════════════════════════════════════
+🚨 CRITICAL: AGGRESSIVE JOB DESCRIPTION EXTRACTION 🚨
+═══════════════════════════════════════════════════════════════════════════════
+
+THIS IS THE #1 SOURCE OF DATA LOSS. PAY CLOSE ATTENTION!
+
+PROBLEM: Job descriptions are often found as:
+- Bullet points after the job title/dates
+- Paragraphs describing responsibilities
+- Technical details between one job and the next
+
+LOOK FOR TEXT BLOCKS BETWEEN JOB HEADERS!
+
+PATTERN TO DETECT:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ [JOB TITLE] at [COMPANY]                                                    │
+│ [DATES]                                                                     │
+│                                                                             │
+│ ← HERE IS THE DESCRIPTION BLOCK - CAPTURE ALL OF IT! →                     │
+│                                                                             │
+│ • Bullet point 1 (responsibility)                                          │
+│ • Bullet point 2 (achievement)                                             │
+│ • Technical implementation details...                                      │
+│                                                                             │
+│ [NEXT JOB TITLE]  ← STOP here, this is the next job                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+EXTRACTION RULES:
+
+1. **DO NOT SUMMARIZE** - Extract responsibilities VERBATIM (word for word).
+   ❌ WRONG: "Worked on compliance projects"
+   ✅ RIGHT: "Konzeption und Implementierung von Compliance-Frameworks (nDSG)"
+
+2. **CAPTURE EVERY BULLET POINT** - Each bullet is one entry in responsibilities[].
+   Input: "• Compliance-Frameworks\n• Security Audits\n• Dokumentation"
+   Output: responsibilities: [
+     "Compliance-Frameworks",
+     "Security Audits", 
+     "Dokumentation"
+   ]
+
+3. **INCLUDE TECHNICAL DETAILS** - Technologies mentioned → technologies[] array.
+   If you see "Kubernetes, Docker, AWS" → technologies: ["Kubernetes", "Docker", "AWS"]
+
+4. **IF UNSURE ABOUT PARENT** - Still capture, use unmapped_segments:
+   {
+     "originalText": "Konzeption und Implementierung von Compliance-Frameworks...",
+     "detectedCategory": "job_details",
+     "reason": "Job description but couldn't identify parent job entry",
+     "suggestedParent": "Technischer IT-Consultant",
+     "confidence": 0.7
+   }
+
+SANITY CHECK TEMPLATE (use this in _thought_process):
+"
+=== JOB DESCRIPTION SANITY CHECK ===
+Job 1: [TITLE] at [COMPANY]
+  - Found description text: [YES/NO]
+  - Lines captured: [LINE_IDS]
+  - If NO: Why? [REASON]
+  
+Job 2: [TITLE] at [COMPANY]
+  - Found description text: [YES/NO]
+  - Lines captured: [LINE_IDS]
+  - If NO: Why? [REASON]
+  
+⚠️ Any orphan text blocks found? [YES/NO]
+⚠️ Placed in unmapped_segments? [YES/NO]
+"`;
 
 /**
  * Section 4: The residue bucket rule - ensures no data loss
@@ -209,8 +298,10 @@ Your response MUST be valid JSON with this EXACT structure:
       "startDate": string | null,
       "endDate": string | null,
       "location": string | null,
-      "description": string | null,
-      "evidence": [...]
+      "description": string | null,  // DEPRECATED: Use responsibilities instead
+      "responsibilities": [string],   // REQUIRED: Array of ALL job description bullets/paragraphs
+      "technologies": [string],       // Optional: Technologies mentioned in this role
+      "evidence": [...]  // MUST include lineIds from description text!
     }],
     "education": [{
       "institution": string | null,
@@ -224,10 +315,12 @@ Your response MUST be valid JSON with this EXACT structure:
   
   "unmapped_segments": [{
     "originalText": string,
-    "detectedCategory": "personal" | "contact" | "date" | "skill" | "credential" | "other",
+    "detectedCategory": "personal" | "contact" | "date" | "skill" | "credential" | "job_details" | "education_details" | "other",
     "reason": string,
     "confidence": number (0-1),
-    "suggestedField": string | null
+    "suggestedField": string | null,
+    "suggestedParent": string | null,  // For job_details: which job entry does this belong to?
+    "lineReference": string | null      // The lineId from input for traceability
   }],
   
   "metadata": {
@@ -281,6 +374,10 @@ export function buildSystemPrompt(
   prompt += SECTION_COGNITIVE_STEP;
   prompt += "\n\n";
   prompt += SECTION_IMPLICIT_MAPPINGS;
+  prompt += "\n\n";
+  
+  // CRITICAL: Add job description extraction rules
+  prompt += SECTION_JOB_DESCRIPTIONS;
   prompt += "\n\n";
   
   // Inject past corrections if available

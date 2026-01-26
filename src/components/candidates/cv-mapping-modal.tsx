@@ -14,6 +14,7 @@ import {
   Bookmark,
   Info,
   Sparkles,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   Dialog,
@@ -33,7 +34,7 @@ import type {
   ExtractedFieldWithEvidence,
 } from "@/lib/azure-di/types";
 import type { CandidateFormData } from "@/lib/cv-autofill/types";
-import { addFieldSynonym, recordExtractionFeedback } from "@/actions/extraction-config";
+import { addFieldSynonym, recordExtractionFeedback, recordFieldReassignment } from "@/actions/extraction-config";
 
 export interface CVMappingModalProps {
   draft: CandidateAutoFillDraftV2 | null;
@@ -43,12 +44,13 @@ export interface CVMappingModalProps {
   isOpen: boolean;
 }
 
-type FieldAction = "confirm" | "edit" | "reject";
+type FieldAction = "confirm" | "edit" | "reject" | "reassign";
 
 interface FieldState {
   action: FieldAction;
   editedValue: string;
   rememberMapping: boolean;
+  reassignedTo: string | null;
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -68,7 +70,42 @@ const FIELD_LABELS: Record<string, string> = {
   experience: "Berufserfahrung",
   education: "Ausbildung",
   certificates: "Zertifikate",
+  yearsOfExperience: "Berufserfahrung (Jahre)",
+  currentSalary: "Aktuelles Gehalt",
+  expectedSalary: "Gewünschtes Gehalt",
+  desiredHourlyRate: "Gewünschter Stundensatz",
+  noticePeriod: "Kündigungsfrist",
+  availableFrom: "Verfügbar ab",
+  notes: "Notizen",
+  nationality: "Nationalität",
+  workloadPreference: "Arbeitspensum",
+  companyName: "Firmenname",
 };
+
+// Alle verfügbaren Felder für die Neuzuweisung
+const ALL_AVAILABLE_FIELDS = [
+  "firstName",
+  "lastName",
+  "email",
+  "phone",
+  "street",
+  "postalCode",
+  "city",
+  "canton",
+  "linkedinUrl",
+  "targetRole",
+  "birthdate",
+  "yearsOfExperience",
+  "currentSalary",
+  "expectedSalary",
+  "desiredHourlyRate",
+  "noticePeriod",
+  "availableFrom",
+  "notes",
+  "nationality",
+  "workloadPreference",
+  "companyName",
+];
 
 export function CVMappingModal({
   draft,
@@ -90,6 +127,7 @@ export function CVMappingModal({
       action: "confirm",
       editedValue: typeof field.extractedValue === "string" ? field.extractedValue : JSON.stringify(field.extractedValue),
       rememberMapping: false,
+      reassignedTo: null,
     };
   };
 
@@ -127,6 +165,30 @@ export function CVMappingModal({
             null,
             "reject",
             field.evidence.confidence
+          );
+        }
+        continue;
+      }
+
+      // Neuzuweisung: Der Wert wird einem anderen Feld zugewiesen
+      if (state.action === "reassign" && state.reassignedTo) {
+        const finalValue = typeof field.extractedValue === "string" 
+          ? field.extractedValue 
+          : JSON.stringify(field.extractedValue);
+        
+        // Speichere den Wert im neuen Zielfeld
+        setNestedValue(mappedData, state.reassignedTo, finalValue);
+        
+        if (jobId) {
+          // Speichere das Reassignment-Feedback für maschinelles Lernen
+          recordFieldReassignment(
+            jobId,
+            field.targetField,
+            state.reassignedTo,
+            finalValue,
+            field.targetField, // Verwende das ursprüngliche targetField als Label
+            field.evidence.confidence,
+            state.rememberMapping
           );
         }
         continue;
@@ -187,6 +249,25 @@ export function CVMappingModal({
   const confirmedCount = filledFields.filter((f) => getFieldState(f).action === "confirm").length;
   const editedCount = filledFields.filter((f) => getFieldState(f).action === "edit").length;
   const rejectedCount = filledFields.filter((f) => getFieldState(f).action === "reject").length;
+  const reassignedCount = filledFields.filter((f) => getFieldState(f).action === "reassign").length;
+
+  // Berechne welche Felder bereits belegt sind (für die Auswahl bei Neuzuweisung)
+  const usedFields = new Set<string>();
+  filledFields.forEach((f) => {
+    const state = getFieldState(f);
+    if (state.action === "confirm" || state.action === "edit") {
+      usedFields.add(f.targetField);
+    } else if (state.action === "reassign" && state.reassignedTo) {
+      usedFields.add(state.reassignedTo);
+    }
+  });
+  
+  // Verfügbare Felder für Neuzuweisung (alle Felder außer die bereits belegten)
+  const getAvailableFieldsForReassign = (currentField: string): string[] => {
+    return ALL_AVAILABLE_FIELDS.filter(
+      (f) => f !== currentField && !usedFields.has(f)
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -221,7 +302,7 @@ export function CVMappingModal({
           )}
         </div>
 
-        <div className="flex gap-4 text-xs">
+        <div className="flex gap-4 text-xs flex-wrap">
           <span className="flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3 text-green-600" />
             {confirmedCount} bestätigt
@@ -229,6 +310,10 @@ export function CVMappingModal({
           <span className="flex items-center gap-1">
             <Edit2 className="h-3 w-3 text-blue-600" />
             {editedCount} bearbeitet
+          </span>
+          <span className="flex items-center gap-1">
+            <ArrowRightLeft className="h-3 w-3 text-purple-600" />
+            {reassignedCount} neu zugewiesen
           </span>
           <span className="flex items-center gap-1">
             <XCircle className="h-3 w-3 text-red-600" />
@@ -252,6 +337,7 @@ export function CVMappingModal({
                     isEvidenceExpanded={expandedEvidence.has(field.targetField)}
                     onToggleEvidence={() => toggleEvidence(field.targetField)}
                     onUpdateState={(updates) => updateFieldState(field.targetField, updates)}
+                    availableFieldsForReassign={getAvailableFieldsForReassign(field.targetField)}
                   />
                 ))}
               </div>
@@ -334,9 +420,9 @@ export function CVMappingModal({
             <X className="mr-2 h-4 w-4" />
             Abbrechen
           </Button>
-          <Button onClick={handleConfirm} disabled={confirmedCount + editedCount === 0}>
+          <Button onClick={handleConfirm} disabled={confirmedCount + editedCount + reassignedCount === 0}>
             <CheckCircle2 className="mr-2 h-4 w-4" />
-            {confirmedCount + editedCount} Felder übernehmen
+            {confirmedCount + editedCount + reassignedCount} Felder übernehmen
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -350,14 +436,17 @@ function ExtractedFieldRow({
   isEvidenceExpanded,
   onToggleEvidence,
   onUpdateState,
+  availableFieldsForReassign,
 }: {
   field: ExtractedFieldWithEvidence;
   state: FieldState;
   isEvidenceExpanded: boolean;
   onToggleEvidence: () => void;
   onUpdateState: (updates: Partial<FieldState>) => void;
+  availableFieldsForReassign: string[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isReassigning, setIsReassigning] = useState(false);
   const [editValue, setEditValue] = useState(
     typeof field.extractedValue === "string" ? field.extractedValue : JSON.stringify(field.extractedValue)
   );
@@ -372,6 +461,8 @@ function ExtractedFieldRow({
     ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900"
     : state.action === "edit"
     ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900"
+    : state.action === "reassign"
+    ? "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900"
     : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900";
 
   const handleSaveEdit = () => {
@@ -420,12 +511,73 @@ function ExtractedFieldRow({
                 <X className="h-4 w-4 text-red-600" />
               </Button>
             </div>
+          ) : isReassigning ? (
+            <div className="flex flex-col gap-2 mt-2">
+              <div className="flex items-center gap-2 text-xs text-purple-600">
+                <ArrowRightLeft className="h-3 w-3" />
+                <span>Diesen Wert einem anderen Feld zuweisen:</span>
+              </div>
+              <div className="flex gap-2 items-center">
+                <select
+                  className="flex-1 p-2 border rounded text-sm"
+                  value={state.reassignedTo || ""}
+                  onChange={(e) => onUpdateState({ reassignedTo: e.target.value || null })}
+                >
+                  <option value="">-- Feld wählen --</option>
+                  {availableFieldsForReassign.map((f) => (
+                    <option key={f} value={f}>
+                      {FIELD_LABELS[f] || f}
+                    </option>
+                  ))}
+                </select>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => {
+                    if (state.reassignedTo) {
+                      onUpdateState({ action: "reassign" });
+                    }
+                    setIsReassigning(false);
+                  }} 
+                  className="h-8 px-2"
+                  disabled={!state.reassignedTo}
+                >
+                  <Check className="h-4 w-4 text-purple-600" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => {
+                    onUpdateState({ reassignedTo: null, action: "confirm" });
+                    setIsReassigning(false);
+                  }} 
+                  className="h-8 px-2"
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </Button>
+              </div>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={state.rememberMapping || false}
+                  onChange={(e) => onUpdateState({ rememberMapping: e.target.checked })}
+                  className="h-3 w-3"
+                />
+                <Bookmark className="h-3 w-3" />
+                Diese Zuordnung für zukünftige CVs merken
+              </label>
+            </div>
           ) : (
             <div className="text-sm text-muted-foreground mt-1 truncate">
               {state.action === "edit" ? (
                 <span className="text-blue-600">{state.editedValue}</span>
               ) : state.action === "reject" ? (
                 <span className="line-through text-red-600">{displayValue}</span>
+              ) : state.action === "reassign" && state.reassignedTo ? (
+                <span className="text-purple-600 flex items-center gap-1">
+                  <ArrowRightLeft className="h-3 w-3" />
+                  {displayValue} → {FIELD_LABELS[state.reassignedTo] || state.reassignedTo}
+                </span>
               ) : (
                 displayValue
               )}
@@ -434,7 +586,7 @@ function ExtractedFieldRow({
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0">
-          {!isEditing && typeof field.extractedValue === "string" && (
+          {!isEditing && !isReassigning && typeof field.extractedValue === "string" && (
             <Button
               variant="ghost"
               size="sm"
@@ -445,19 +597,35 @@ function ExtractedFieldRow({
               <Edit2 className="h-3 w-3" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onUpdateState({ action: state.action === "confirm" ? "reject" : "confirm" })}
-            className="h-7 w-7 p-0"
-            title={state.action === "reject" ? "Wiederherstellen" : "Ablehnen"}
-          >
-            {state.action === "reject" ? (
-              <Check className="h-3 w-3 text-green-600" />
-            ) : (
-              <XCircle className="h-3 w-3 text-red-600" />
-            )}
-          </Button>
+          {!isEditing && !isReassigning && availableFieldsForReassign.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsReassigning(true)}
+              className="h-7 w-7 p-0"
+              title="Anderem Feld zuweisen"
+            >
+              <ArrowRightLeft className="h-3 w-3 text-purple-600" />
+            </Button>
+          )}
+          {!isEditing && !isReassigning && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdateState({ 
+                action: state.action === "confirm" || state.action === "reassign" ? "reject" : "confirm",
+                reassignedTo: null 
+              })}
+              className="h-7 w-7 p-0"
+              title={state.action === "reject" ? "Wiederherstellen" : "Ablehnen"}
+            >
+              {state.action === "reject" ? (
+                <Check className="h-3 w-3 text-green-600" />
+              ) : (
+                <XCircle className="h-3 w-3 text-red-600" />
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

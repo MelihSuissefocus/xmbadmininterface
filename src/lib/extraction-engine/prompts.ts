@@ -76,6 +76,49 @@ Only AFTER completing Phase 1, populate the extracted_data object.
 ✅ RIGHT: firstName: "Max", lastName: "Müller"
 
 ═══════════════════════════════════════════════════════════════════════════════
+🚨 CRITICAL: JOB DESCRIPTION EXTRACTION 🚨
+═══════════════════════════════════════════════════════════════════════════════
+
+THIS IS THE #1 SOURCE OF DATA LOSS! Job descriptions contain valuable information.
+
+LOOK FOR TEXT BLOCKS BETWEEN JOB HEADERS:
+- After "[JOB TITLE] at [COMPANY]" and dates
+- Before the NEXT job entry
+- These are responsibilities, achievements, technical details
+
+EXTRACTION RULES FOR JOB DESCRIPTIONS:
+1. **CAPTURE VERBATIM** - Do NOT summarize! Extract word-for-word.
+2. **EACH BULLET = ONE ENTRY** in responsibilities[] array
+3. **TECHNOLOGIES** mentioned → technologies[] array
+4. **EVIDENCE REQUIRED** - lineIds from the description text!
+
+Example Input:
+"Technischer IT-Consultant
+Finnova Banking AG | 2020-2023
+• Konzeption und Implementierung von Compliance-Frameworks (nDSG)
+• Durchführung von Security Audits nach ISO 27001"
+
+Example Output:
+{
+  "title": "Technischer IT-Consultant",
+  "company": "Finnova Banking AG",
+  "startDate": "2020",
+  "endDate": "2023",
+  "responsibilities": [
+    "Konzeption und Implementierung von Compliance-Frameworks (nDSG)",
+    "Durchführung von Security Audits nach ISO 27001"
+  ],
+  "technologies": ["nDSG", "ISO 27001"],
+  "evidence": [/* lineIds for ALL lines including descriptions */]
+}
+
+### SANITY CHECK (add to _thought_process):
+"=== JOB DESCRIPTION CHECK ===
+Job 1 [COMPANY]: Found [N] description lines? [YES/NO]. Captured in responsibilities[]? [YES/NO]
+Job 2 [COMPANY]: Found [N] description lines? [YES/NO]. Captured in responsibilities[]? [YES/NO]
+Orphan text blocks? [YES/NO] → Added to unmapped_segments with detected_type='job_details'"
+
+═══════════════════════════════════════════════════════════════════════════════
 PHASE 3: RESIDUE COLLECTION (unmapped_segments)
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -84,14 +127,18 @@ NEVER discard potentially valuable information. If you see:
 - Skills not in our skills list
 - Credentials/certifications
 - Personal information that doesn't fit schema
+- Job descriptions that couldn't be linked to a job entry
 - Any text that "looks important"
+
+RULE: "If in doubt, put it in unmapped_segments. Better to ask the user than lose the data."
 
 Add it to unmapped_segments with:
 {
   "original_text": "The exact text from the CV",
-  "detected_type": "date|skill|credential|personal|other",
+  "detected_type": "date|skill|credential|personal|job_details|education_details|other",
   "reason": "Why this couldn't be mapped to a standard field",
   "suggested_field": "The field it MIGHT belong to, or null",
+  "suggested_parent": "For job_details: which job entry? e.g., 'Technischer IT-Consultant'",
   "confidence": 0.0-1.0,
   "line_reference": "lineId from input"
 }

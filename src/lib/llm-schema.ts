@@ -104,6 +104,10 @@ const ExperienceSchema = z.object({
   endDate: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  /** Array of job description bullets - CAPTURE VERBATIM! */
+  responsibilities: z.array(z.string()).optional().default([]),
+  /** Technologies mentioned in this role */
+  technologies: z.array(z.string()).optional().default([]),
   evidence: z.array(EvidenceSchema),
 });
 
@@ -120,6 +124,27 @@ const MetadataSchema = z.object({
   notes: z.array(z.string()).optional(),
 });
 
+/** Unmapped segment for data that couldn't be structured */
+const UnmappedSegmentSchema = z.object({
+  original_text: z.string(),
+  detected_type: z.enum([
+    "date", 
+    "skill", 
+    "credential", 
+    "personal", 
+    "job_details",
+    "education_details",
+    "other"
+  ]),
+  reason: z.string(),
+  suggested_field: z.string().nullable(),
+  suggested_parent: z.string().nullable().optional(),
+  confidence: z.number().min(0).max(1),
+  line_reference: z.string().nullable().optional(),
+});
+
+export type LlmUnmappedSegment = z.infer<typeof UnmappedSegmentSchema>;
+
 export const LlmExtractionResponseSchema = z.object({
   person: PersonSchema,
   contact: ContactSchema,
@@ -128,6 +153,8 @@ export const LlmExtractionResponseSchema = z.object({
   skills: z.array(SkillSchema),
   experience: z.array(ExperienceSchema),
   education: z.array(EducationSchema),
+  /** CRITICAL: All data that couldn't be mapped MUST go here */
+  unmapped_segments: z.array(UnmappedSegmentSchema).optional().default([]),
   metadata: MetadataSchema,
 });
 

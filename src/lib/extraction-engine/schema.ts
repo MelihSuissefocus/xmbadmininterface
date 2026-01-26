@@ -11,9 +11,19 @@ export type Evidence = z.infer<typeof EvidenceSchema>;
 
 const UnmappedSegmentSchema = z.object({
   original_text: z.string(),
-  detected_type: z.enum(["date", "skill", "credential", "personal", "other"]),
+  detected_type: z.enum([
+    "date", 
+    "skill", 
+    "credential", 
+    "personal", 
+    "job_details",      // NEW: For orphaned job descriptions
+    "education_details", // NEW: For orphaned education details
+    "other"
+  ]),
   reason: z.string(),
   suggested_field: z.string().nullable(),
+  /** For job_details: which job entry does this text belong to? */
+  suggested_parent: z.string().nullable().optional(),
   confidence: z.number().min(0).max(1),
   line_reference: z.string().nullable().optional(),
 });
@@ -65,7 +75,12 @@ const ExperienceSchema = z.object({
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
+  /** DEPRECATED: Use responsibilities instead */
   description: z.string().nullable().optional(),
+  /** Array of ALL job description bullets/paragraphs - CAPTURE VERBATIM! */
+  responsibilities: z.array(z.string()).optional().default([]),
+  /** Technologies/tools mentioned in this role */
+  technologies: z.array(z.string()).optional().default([]),
   evidence: z.array(EvidenceSchema),
 });
 

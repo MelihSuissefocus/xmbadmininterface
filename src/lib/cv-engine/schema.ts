@@ -69,6 +69,8 @@ export const UnmappedSegmentSchema = z.object({
    * - "date": Dates without clear context
    * - "skill": Skills not in master list
    * - "credential": Certificates, licenses
+   * - "job_details": Job descriptions, responsibilities, achievements (NEW!)
+   * - "education_details": Education descriptions, courses, projects
    * - "other": Catch-all
    */
   detectedCategory: z.enum([
@@ -77,6 +79,8 @@ export const UnmappedSegmentSchema = z.object({
     "date",
     "skill",
     "credential",
+    "job_details",      // NEW: For orphaned job descriptions
+    "education_details", // NEW: For orphaned education details
     "other"
   ]),
   
@@ -86,6 +90,7 @@ export const UnmappedSegmentSchema = z.object({
    * - "No 'workPermit' field in schema"
    * - "Ambiguous: could be firstName or companyName"
    * - "Skill 'Kubernetes' not in allowed skills list"
+   * - "Job description but couldn't identify parent job entry"
    */
   reason: z.string().min(1, "Reason is required for debugging"),
   
@@ -100,6 +105,15 @@ export const UnmappedSegmentSchema = z.object({
    * Used to pre-populate dropdown in Manual Assignment UI
    */
   suggestedField: z.string().nullable(),
+  
+  /**
+   * NEW: For job_details and education_details categories
+   * Identifies which parent entry this text likely belongs to.
+   * Example: "Technischer IT-Consultant" or "Finnova Banking AG"
+   * 
+   * This allows the UI to show: "This text appears to belong to [suggestedParent]"
+   */
+  suggestedParent: z.string().nullable().optional(),
   
   /** Optional: reference to source line for traceability */
   lineReference: z.string().nullable().optional(),
@@ -162,14 +176,50 @@ export const SkillSchema = z.object({
   evidence: z.array(EvidenceSchema),
 });
 
-/** Work experience entry */
+/** 
+ * Work experience entry
+ * 
+ * CRITICAL: Job descriptions MUST be captured aggressively!
+ * The `responsibilities` field should contain ALL text found between
+ * this job entry and the next one (bullet points, paragraphs, etc.)
+ */
 export const ExperienceSchema = z.object({
   company: z.string().nullable().optional(),
   title: z.string().nullable().optional(),
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),
   location: z.string().nullable().optional(),
+  
+  /** 
+   * DEPRECATED: Use `responsibilities` instead.
+   * Kept for backward compatibility - will be populated from responsibilities[0] if set
+   */
   description: z.string().nullable().optional(),
+  
+  /**
+   * AGGRESSIVE CONTENT RETENTION:
+   * This array MUST contain ALL text blocks found between this job entry
+   * and the next one. Each bullet point, paragraph, or responsibility
+   * should be a separate array entry.
+   * 
+   * Example:
+   * [
+   *   "Konzeption und Implementierung von Compliance-Frameworks (nDSG)",
+   *   "Durchführung von Security Audits nach ISO 27001",
+   *   "Erstellung technischer Dokumentation"
+   * ]
+   * 
+   * RULE: If in doubt, include the text. Better to capture too much than lose data.
+   */
+  responsibilities: z.array(z.string()).optional().default([]),
+  
+  /**
+   * Optional: Technologies/tools mentioned in this role
+   * Extracted from the description text
+   */
+  technologies: z.array(z.string()).optional().default([]),
+  
+  /** Evidence for this experience entry - MUST include description line IDs */
   evidence: z.array(EvidenceSchema),
 });
 
