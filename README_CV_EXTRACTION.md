@@ -96,10 +96,11 @@ AZURE_DI_ENDPOINT=https://documentai-xmb.cognitiveservices.azure.com/
 AZURE_DI_KEY=<your-api-key>
 
 # Azure OpenAI Configuration (Optional - for LLM-enhanced extraction)
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+# Get these from Azure AI Foundry: https://ai.azure.com/
+AZURE_OPENAI_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
 AZURE_OPENAI_KEY=<your-openai-key>
-AZURE_OPENAI_DEPLOYMENT=gpt-4.1-nano
-AZURE_OPENAI_API_VERSION=2024-08-01-preview  # Optional, default: 2024-08-01-preview
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+AZURE_OPENAI_API_VERSION=2024-12-01-preview  # Optional, default: 2024-12-01-preview
 
 # Feature Flags
 CV_LLM_ENABLED=true  # Set to true to enable LLM extraction
@@ -396,7 +397,7 @@ When `CV_LLM_ENABLED=true` and Azure OpenAI is configured:
 
 1. **Azure DI** processes the document → produces `DocumentRep` with OCR, layout, polygons
 2. **Packing module** compresses content to ~8k tokens (header lines, contact info, sections)
-3. **Azure OpenAI GPT-4.1-nano** extracts structured data with evidence references
+3. **Azure OpenAI GPT-4o-mini** extracts structured data with evidence references
 4. **Validation** filters out job titles as names, normalizes phone/email, checks evidence
 5. **Merge** combines LLM results with deterministic email/phone extraction (deterministic takes precedence)
 6. **Scoring** assigns confidence scores: ≥0.90 autofill, 0.70-0.89 review, <0.70 skip
@@ -446,7 +447,7 @@ Tests cover:
 4. **Complex tables:** Nested or merged cells may not extract perfectly
 5. **Handwritten content:** Not supported
 6. **Rate limits:** Per-user limits may affect power users during bulk uploads
-7. **LLM costs:** ~CHF 0.05-0.10 per CV with GPT-4.1-nano
+7. **LLM costs:** ~CHF 0.05-0.10 per CV with GPT-4o-mini
 
 ## Support
 
