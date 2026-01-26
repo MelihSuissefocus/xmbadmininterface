@@ -31,11 +31,16 @@ export interface PackedCvInput {
   estimated_tokens: number;
 }
 
-const HEADER_LINES_LIMIT = 40;
-const CONTACT_LINES_LIMIT = 30;
-const KVP_LIMIT = 40;
-const SECTION_LINES_LIMIT = 250;
-const TOKEN_HARD_CAP = 8000;
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOKEN LIMITS - ERHÖHT FÜR VOLLSTÄNDIGE EXTRAKTION
+// ═══════════════════════════════════════════════════════════════════════════════
+// GPT-4o-mini: $0.15/1M input, $0.60/1M output
+// Bei 16K input = ~$0.0024 pro CV - sehr überschaubar!
+const HEADER_LINES_LIMIT = 80;      // War: 40
+const CONTACT_LINES_LIMIT = 50;     // War: 30
+const KVP_LIMIT = 60;               // War: 40
+const SECTION_LINES_LIMIT = 500;    // War: 250
+const TOKEN_HARD_CAP = 16000;       // War: 8000 - Verdoppelt für längere CVs
 
 const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
 const PHONE_PATTERN = /(\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/;
@@ -271,5 +276,98 @@ export function packCvForLLM(documentRep: DocumentRep): PackedCvInput {
 
 export function getPackedInputAsJson(packed: PackedCvInput): string {
   return JSON.stringify(packed, null, 0);
+}
+
+export function packCvForLlm(rawText: string, pageCount: number = 1): PackedCvInput {
+  const lines = rawText.split("\n").filter((l) => l.trim());
+  const headerLines: PackedLine[] = [];
+  const contactLines: PackedLine[] = [];
+  const sections: PackedSection[] = [];
+  const kvp: PackedKvp[] = [];
+
+  let headerCount = 0;
+  let currentSection: PackedSection | null = null;
+  let totalSectionLines = 0;
+  let lineIndex = 0;
+  const pageNumber = 1;
+
+  for (const text of lines) {
+    const trimmed = text.trim();
+    if (!trimmed) continue;
+
+    const lineId = generateLineId(pageNumber, lineIndex);
+    const packedLine: PackedLine = { lineId, page: pageNumber, text: trimmed };
+
+    if (headerCount < HEADER_LINES_LIMIT && lineIndex < 50) {
+      headerLines.push(packedLine);
+      headerCount++;
+    }
+
+    if (EMAIL_PATTERN.test(trimmed) || PHONE_PATTERN.test(trimmed) || URL_PATTERN.test(trimmed)) {
+      if (contactLines.length < CONTACT_LINES_LIMIT) {
+        contactLines.push(packedLine);
+      }
+    }
+
+    const kvMatch = trimmed.match(/^([^:]+):\s*(.+)$/);
+    if (kvMatch && kvMatch[1] && kvMatch[2]) {
+      const key = kvMatch[1].trim();
+      const value = kvMatch[2].trim();
+      if (isRelevantKvp(key) && kvp.length < KVP_LIMIT) {
+        kvp.push({ key, value, page: pageNumber, confidence: 1 });
+      }
+    }
+
+    const sectionType = detectSectionType(trimmed);
+    if (sectionType) {
+      if (currentSection && currentSection.lines.length > 0) {
+        sections.push(currentSection);
+      }
+      currentSection = { name: sectionType, lines: [] };
+    } else if (currentSection && totalSectionLines < SECTION_LINES_LIMIT) {
+      currentSection.lines.push(packedLine);
+      totalSectionLines++;
+    }
+
+    lineIndex++;
+  }
+
+  if (currentSection && currentSection.lines.length > 0) {
+    sections.push(currentSection);
+  }
+
+  if (sections.length === 0 && lines.length > 0) {
+    const genericSection: PackedSection = {
+      name: "content",
+      lines: lines.slice(Math.min(50, lines.length)).map((text, idx) => ({
+        lineId: generateLineId(1, 50 + idx),
+        page: 1,
+        text: text.trim(),
+      })).filter(l => l.text),
+    };
+    if (genericSection.lines.length > 0) {
+      sections.push(genericSection);
+    }
+  }
+
+  let estimatedTokens = 0;
+  estimatedTokens += headerLines.reduce((sum, l) => sum + estimateTokens(l.text), 0);
+  estimatedTokens += contactLines.reduce((sum, l) => sum + estimateTokens(l.text), 0);
+  estimatedTokens += kvp.reduce((sum, k) => sum + estimateTokens(k.key + k.value), 0);
+  estimatedTokens += sections.reduce(
+    (sum, s) => sum + s.lines.reduce((ls, l) => ls + estimateTokens(l.text), 0),
+    0
+  );
+  estimatedTokens += 500;
+
+  return {
+    header_lines: headerLines,
+    contact_lines: contactLines,
+    kvp,
+    sections,
+    detected_languages: [],
+    total_pages: pageCount,
+    estimated_tokens: Math.min(estimatedTokens, TOKEN_HARD_CAP),
+  };
 }
 

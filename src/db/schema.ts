@@ -340,3 +340,55 @@ export type TenantSkillAlias = typeof tenantSkillAliases.$inferSelect;
 export type NewTenantSkillAlias = typeof tenantSkillAliases.$inferInsert;
 export type CvExtractionFeedback = typeof cvExtractionFeedback.$inferSelect;
 export type NewCvExtractionFeedback = typeof cvExtractionFeedback.$inferInsert;
+
+// Entity Extraction Engine - Self-Learning Tables
+export const extractionCorrections = pgTable("extraction_corrections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
+  sourceContext: text("source_context").notNull(),
+  sourceLabel: text("source_label"),
+  extractedValue: text("extracted_value"),
+  extractedField: text("extracted_field"),
+  correctedValue: text("corrected_value").notNull(),
+  correctedField: text("corrected_field").notNull(),
+  correctionReason: text("correction_reason"),
+  cvHash: text("cv_hash"),
+  locale: text("locale").default("de"),
+  usageCount: integer("usage_count").default(0),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const unmappedSegmentAssignments = pgTable("unmapped_segment_assignments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
+  segmentText: text("segment_text").notNull(),
+  segmentCategory: text("segment_category"),
+  assignedField: text("assigned_field").notNull(),
+  assignedValue: text("assigned_value"),
+  surroundingContext: text("surrounding_context"),
+  cvHash: text("cv_hash"),
+  usageCount: integer("usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const extractionFieldMetrics = pgTable("extraction_field_metrics", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").default("00000000-0000-0000-0000-000000000000").notNull(),
+  fieldName: text("field_name").notNull(),
+  totalExtractions: integer("total_extractions").default(0),
+  correctExtractions: integer("correct_extractions").default(0),
+  correctedExtractions: integer("corrected_extractions").default(0),
+  nullExtractions: integer("null_extractions").default(0),
+  recentAccuracy: text("recent_accuracy"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ExtractionCorrection = typeof extractionCorrections.$inferSelect;
+export type NewExtractionCorrection = typeof extractionCorrections.$inferInsert;
+export type UnmappedSegmentAssignment = typeof unmappedSegmentAssignments.$inferSelect;
+export type NewUnmappedSegmentAssignment = typeof unmappedSegmentAssignments.$inferInsert;
+export type ExtractionFieldMetric = typeof extractionFieldMetrics.$inferSelect;
+export type NewExtractionFieldMetric = typeof extractionFieldMetrics.$inferInsert;

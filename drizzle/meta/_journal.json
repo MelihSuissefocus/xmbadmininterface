@@ -36,6 +36,13 @@
       "when": 1738000800000,
       "tag": "0004_production_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1738087200000,
+      "tag": "0005_entity_extraction_feedback",
+      "breakpoints": true
     }
   ]
 }
