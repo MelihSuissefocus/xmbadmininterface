@@ -101,9 +101,9 @@ export function isLlmEnabled(): boolean {
   return enabled === "true" || enabled === "1";
 }
 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 1;  // Reduced to avoid Vercel function timeout
 const INITIAL_BACKOFF_MS = 1000;
-const TIMEOUT_MS = 30000;
+const TIMEOUT_MS = 60000;  // 60 seconds - Azure OpenAI can be slow on cold start
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
