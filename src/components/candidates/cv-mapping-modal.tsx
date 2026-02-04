@@ -355,54 +355,96 @@ export function CVMappingModal({
                 Zur Überprüfung ({ambiguousFields.length})
               </h3>
               <div className="space-y-3">
-                {ambiguousFields.map((field, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-900"
-                  >
-                    <div className="mb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium">{field.extractedLabel}</div>
-                        <Badge variant="outline" className="text-xs">
-                          {Math.round(field.evidence.confidence * 100)}%
-                        </Badge>
+                {ambiguousFields.map((field, index) => {
+                  // Berechne welche Felder bereits belegt sind
+                  const usedFields = new Set([
+                    ...filledFields.map(f => {
+                      const state = getFieldState(f);
+                      // Bei Reassignment ist das ursprüngliche Feld wieder frei
+                      if (state.action === "reassign" && state.reassignedTo) {
+                        return state.reassignedTo;
+                      }
+                      return state.action !== "reject" ? f.targetField : null;
+                    }).filter(Boolean),
+                    // Andere ambiguous selections
+                    ...Object.entries(ambiguousSelections)
+                      .filter(([idx, val]) => parseInt(idx) !== index && val && val !== "ignore")
+                      .map(([, val]) => val)
+                  ]);
+                  
+                  // Alle verfügbaren Felder für dieses ambiguous Feld
+                  const availableFields = ALL_AVAILABLE_FIELDS.filter(f => !usedFields.has(f));
+                  
+                  // Suggested targets zuerst, dann alle anderen
+                  const suggestedFieldNames = field.suggestedTargets.map(t => t.targetField);
+                  const otherFields = availableFields.filter(f => !suggestedFieldNames.includes(f));
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-900"
+                    >
+                      <div className="mb-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{field.extractedLabel}</div>
+                          <Badge variant="outline" className="text-xs">
+                            {Math.round(field.evidence.confidence * 100)}%
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">{field.extractedValue}</div>
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                          <span>Seite {field.evidence.page}</span>
+                          <span className="font-mono bg-white/50 dark:bg-black/20 px-1 rounded">
+                            &quot;{field.evidence.exactText.substring(0, 40)}...&quot;
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">{field.extractedValue}</div>
-                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                        <span>Seite {field.evidence.page}</span>
-                        <span className="font-mono bg-white/50 dark:bg-black/20 px-1 rounded">
-                          &quot;{field.evidence.exactText.substring(0, 40)}...&quot;
-                        </span>
+                      <div className="flex gap-2 items-center mt-2">
+                        <select
+                          className="flex-1 p-2 border rounded text-sm"
+                          value={ambiguousSelections[index] || field.suggestedTargets[0]?.targetField || ""}
+                          onChange={(e) => setAmbiguousSelections((prev) => ({ ...prev, [index]: e.target.value }))}
+                        >
+                          {/* Vorgeschlagene Felder zuerst (mit Konfidenz) */}
+                          {field.suggestedTargets.length > 0 && (
+                            <optgroup label="Vorgeschlagen">
+                              {field.suggestedTargets.map((target, idx) => (
+                                <option key={`suggested-${idx}`} value={target.targetField}>
+                                  {FIELD_LABELS[target.targetField] || target.targetField} ({target.confidence})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {/* Alle anderen verfügbaren Felder */}
+                          {otherFields.length > 0 && (
+                            <optgroup label="Weitere Felder">
+                              {otherFields.map((fieldName) => (
+                                <option key={fieldName} value={fieldName}>
+                                  {FIELD_LABELS[fieldName] || fieldName}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          <optgroup label="Aktionen">
+                            <option value="ignore">❌ Ignorieren</option>
+                          </optgroup>
+                        </select>
+                        <label className="flex items-center gap-1 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={fieldStates[`ambiguous_${index}`]?.rememberMapping || false}
+                            onChange={(e) =>
+                              updateFieldState(`ambiguous_${index}`, { rememberMapping: e.target.checked })
+                            }
+                            className="h-3 w-3"
+                          />
+                          <Bookmark className="h-3 w-3" />
+                          Merken
+                        </label>
                       </div>
                     </div>
-                    <div className="flex gap-2 items-center mt-2">
-                      <select
-                        className="flex-1 p-2 border rounded text-sm"
-                        value={ambiguousSelections[index] || field.suggestedTargets[0]?.targetField || ""}
-                        onChange={(e) => setAmbiguousSelections((prev) => ({ ...prev, [index]: e.target.value }))}
-                      >
-                        {field.suggestedTargets.map((target, idx) => (
-                          <option key={idx} value={target.targetField}>
-                            {FIELD_LABELS[target.targetField] || target.targetField} ({target.confidence})
-                          </option>
-                        ))}
-                        <option value="ignore">Ignorieren</option>
-                      </select>
-                      <label className="flex items-center gap-1 text-xs cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={fieldStates[`ambiguous_${index}`]?.rememberMapping || false}
-                          onChange={(e) =>
-                            updateFieldState(`ambiguous_${index}`, { rememberMapping: e.target.checked })
-                          }
-                          className="h-3 w-3"
-                        />
-                        <Bookmark className="h-3 w-3" />
-                        Merken
-                      </label>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
