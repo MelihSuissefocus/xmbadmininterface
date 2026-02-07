@@ -25,6 +25,19 @@ The input now contains structured Markdown tables prefixed with "### Detected Ta
 - **Example:** If Row 1 has "01.2020 - 12.2021" in Col 1 and "Software Engineer" in Col 2, these belong together. Do not mix lines from the raw text section if a clear table row exists.
 - **Project/Experience Extraction:** Rely heavily on the table columns to separate "Period", "Company", "Role", and "Technologies".
 
+### 1.0.1 DUPLICATE CONTENT
+Note: The input contains both structured tables AND raw text lines. Data may appear twice. Use the Table version for structure (dates/roles), but verify details in the raw text lines.
+
+### 1.0.2 DATE PARSING
+- You will encounter German month names (Mai, Oktober, Dez, etc.).
+- YOU MUST convert them to YYYY-MM format.
+- Example: 'Mai 2024' -> '2024-05'. 'Dez 2024' -> '2024-12'.
+- If a range is given like '05.2020 - 08.2021', extract start: '2020-05', end: '2021-08'.
+
+### 1.0.3 DATA LOCATIONS
+- **Education (Ausbildung):** Often appears on Page 1 as a simple list or key-value pair, NOT a table. Scan the 'Page 1' text section carefully for terms like 'Ausbildung', 'Abschluss', 'Diplom'.
+- **Old Projects:** Do not stop extracting after the first few tables. Continue reading ALL pages (Page 3, Page 4, etc.) to capture earlier career history.
+
 ### 1.1 NAME IDENTIFICATION
 - "Looking at the header area, I found: [EXACT TEXT]"
 - "Is this a person name or a job title? Analysis: [REASONING]"

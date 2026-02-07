@@ -2,50 +2,77 @@ import type { AnalyzeResult } from "@azure/ai-form-recognizer";
 
 /**
  * Konvertiert ein Azure Document Intelligence AnalyzeResult in Markdown-Format.
- * Priorisiert Tabellen, um strukturierte Daten für LLM-Verarbeitung zu optimieren.
+ * Rekonstruiert das Dokument Seite für Seite, um die korrekte Lesereihenfolge zu bewahren.
  * 
  * @param result - Das AnalyzeResult von Azure Document Intelligence
- * @returns Markdown-formatierter String mit Tabellen und Volltext
+ * @returns Markdown-formatierter String mit korrekter Seitenreihenfolge
  */
 export function convertLayoutToMarkdown(result: AnalyzeResult): string {
   const sections: string[] = [];
 
-  // 1. Verarbeite alle erkannten Tabellen
-  if (result.tables && result.tables.length > 0) {
-    result.tables.forEach((table, tableIndex) => {
-      sections.push(`### Detected Table ${tableIndex + 1}`);
+  // 1. Iteriere durch alle Seiten in der richtigen Reihenfolge
+  if (result.pages && result.pages.length > 0) {
+    result.pages.forEach((page) => {
+      const pageNumber = page.pageNumber;
+
+      // 2a. Füge Seiten-Header hinzu
+      sections.push(`--- Page ${pageNumber} ---`);
       sections.push("");
 
-      // 2. Erstelle 2D-Grid basierend auf rowCount und columnCount
-      const grid: string[][] = Array.from(
-        { length: table.rowCount },
-        () => Array(table.columnCount).fill("")
+      // 2b. Finde alle Tabellen auf dieser Seite
+      const tablesOnPage = (result.tables || []).filter((table) =>
+        table.boundingRegions?.some((region) => region.pageNumber === pageNumber)
       );
 
-      // 3. Fülle das Grid mit Zellinhalten
-      table.cells.forEach((cell) => {
-        const rowIndex = cell.rowIndex;
-        const columnIndex = cell.columnIndex;
-        const content = cell.content || "";
+      // 2c. Konvertiere und füge Tabellen ein
+      if (tablesOnPage.length > 0) {
+        tablesOnPage.forEach((table, tableIndex) => {
+          sections.push(`### Table ${tableIndex + 1}`);
+          sections.push("");
 
-        // Behandle merged cells (rowSpan/columnSpan)
-        if (grid[rowIndex] && grid[rowIndex][columnIndex] !== undefined) {
-          grid[rowIndex][columnIndex] = content.trim();
-        }
-      });
+          // Erstelle 2D-Grid basierend auf rowCount und columnCount
+          const grid: string[][] = Array.from(
+            { length: table.rowCount },
+            () => Array(table.columnCount).fill("")
+          );
 
-      // 4. Konvertiere Grid in Markdown-Tabelle
-      const markdownTable = convertGridToMarkdownTable(grid);
-      sections.push(markdownTable);
-      sections.push("");
+          // Fülle das Grid mit Zellinhalten
+          table.cells.forEach((cell) => {
+            const rowIndex = cell.rowIndex;
+            const columnIndex = cell.columnIndex;
+            const content = cell.content || "";
+
+            if (grid[rowIndex] && grid[rowIndex][columnIndex] !== undefined) {
+              grid[rowIndex][columnIndex] = content.trim();
+            }
+          });
+
+          // Konvertiere Grid in Markdown-Tabelle
+          const markdownTable = convertGridToMarkdownTable(grid);
+          sections.push(markdownTable);
+          sections.push("");
+        });
+      }
+
+      // 2d. Füge alle Textzeilen dieser Seite hinzu
+      if (page.lines && page.lines.length > 0) {
+        sections.push("### Text Content");
+        sections.push("");
+        page.lines.forEach((line) => {
+          sections.push(line.content);
+        });
+        sections.push("");
+      }
     });
   }
 
-  // 5. Füge den gesamten Dokumentinhalt als Fallback hinzu
-  if (result.content) {
-    sections.push("### Full Document Content");
-    sections.push("");
-    sections.push(result.content);
+  // Fallback: Wenn keine Pages vorhanden sind, nutze den raw content
+  if (!result.pages || result.pages.length === 0) {
+    if (result.content) {
+      sections.push("### Document Content");
+      sections.push("");
+      sections.push(result.content);
+    }
   }
 
   return sections.join("\n");
@@ -65,7 +92,7 @@ function convertGridToMarkdownTable(grid: string[][]): string {
   const rows: string[] = [];
 
   // Erste Zeile als Header
-  const headerRow = grid[0].map(cell => cell || " ").join(" | ");
+  const headerRow = grid[0].map((cell) => cell || " ").join(" | ");
   rows.push(`| ${headerRow} |`);
 
   // Header-Separator
@@ -74,7 +101,7 @@ function convertGridToMarkdownTable(grid: string[][]): string {
 
   // Datenzeilen (ab Index 1)
   for (let i = 1; i < grid.length; i++) {
-    const dataRow = grid[i].map(cell => cell || " ").join(" | ");
+    const dataRow = grid[i].map((cell) => cell || " ").join(" | ");
     rows.push(`| ${dataRow} |`);
   }
 
