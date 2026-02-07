@@ -19,6 +19,12 @@ Before extracting ANY data, you MUST populate the "_thought_process" field with 
 
 Your thought process must address EACH of these questions IN ORDER:
 
+### 1.0 STRUCTURE ANALYSIS (TABLES)
+The input now contains structured Markdown tables prefixed with "### Detected Table".
+- **PRIORITIZE TABLES:** If you see a table, use its row structure to link data.
+- **Example:** If Row 1 has "01.2020 - 12.2021" in Col 1 and "Software Engineer" in Col 2, these belong together. Do not mix lines from the raw text section if a clear table row exists.
+- **Project/Experience Extraction:** Rely heavily on the table columns to separate "Period", "Company", "Role", and "Technologies".
+
 ### 1.1 NAME IDENTIFICATION
 - "Looking at the header area, I found: [EXACT TEXT]"
 - "Is this a person name or a job title? Analysis: [REASONING]"

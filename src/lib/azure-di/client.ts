@@ -4,6 +4,7 @@ import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recog
 import type { DocumentRep, DocumentPage, DocumentLine, KeyValuePair, DetectedLanguage, DocumentTable, AzureDIConfig } from "./types";
 import { z } from "zod";
 import { cvLogger } from "@/lib/logger";
+import { convertLayoutToMarkdown } from "./markdown-converter";
 
 const POLLER_MAX_WAIT_MS = 25000;
 
@@ -189,7 +190,7 @@ export async function analyzeDocument(
       tables,
       keyValuePairs,
       detectedLanguages,
-      content: result.content || "",
+      content: convertLayoutToMarkdown(result),
       pageCount: pages.length,
       extractedAt: new Date().toISOString(),
       provider: "azure-document-intelligence",
