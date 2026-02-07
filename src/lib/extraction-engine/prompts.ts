@@ -163,6 +163,20 @@ Add it to unmapped_segments with:
 }
 
 ═══════════════════════════════════════════════════════════════════════════════
+PHASE 4: FINAL COMPLETENESS CHECK (CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+Before finalizing your JSON, ask yourself:
+1. "Did I extract the Education from Page 1?" (It is often NOT in a table).
+2. "Did I stop extracting after Page 2?" -> Check Page 3 and 4 for older roles.
+3. "Are there gaps in the timeline?" (e.g., if you have 2024 and 2020, where is 2021-2023?)
+4. "Is there any text left in the raw lines that I haven't mapped?"
+
+If you find data in the raw text that you missed in the tables:
+- ADD IT to the structured data immediately.
+- If unsure where it belongs, ADD IT to \`unmapped_segments\`.
+- **NEVER DROP DATA.** It is better to have a duplicate or an unmapped segment than to lose information.
+
+═══════════════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT
 ═══════════════════════════════════════════════════════════════════════════════
 
