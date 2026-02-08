@@ -102,6 +102,8 @@ export interface CvExperienceEntry {
   endDate?: string | null; // YYYY-MM | "present"
   description?: string | null;
   technologies?: string[];
+  /** "project" = Mandat / Freelance, "permanent" = Festanstellung */
+  type?: "project" | "permanent";
 }
 
 export interface CvEducationEntry {
