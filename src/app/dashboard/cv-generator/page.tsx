@@ -7,7 +7,7 @@ export default async function CvGeneratorPage() {
   const candidates = await getCandidateList();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)]">
+    <div className="flex flex-col h-full -m-6">
       <CvEditorShell candidates={candidates} />
     </div>
   );

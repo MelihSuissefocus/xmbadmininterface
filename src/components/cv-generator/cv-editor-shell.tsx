@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import dynamic from "next/dynamic";
 import { useForm, FormProvider } from "react-hook-form";
 import {
   CvDesignConfigSchema,
@@ -12,15 +11,9 @@ import {
 import { loadCandidateForCv } from "@/actions/cv-generator";
 import { DesignControls } from "./design-controls";
 import { CandidateSelector } from "./candidate-selector";
-import { CvPdfDocument } from "./pdf-template";
+import { PdfPreview } from "./pdf-preview";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText } from "lucide-react";
-
-// PDFViewer muss client-only sein (kein SSR)
-const PDFViewer = dynamic(
-  () => import("@react-pdf/renderer").then((m) => m.PDFViewer),
-  { ssr: false, loading: () => <PdfPlaceholder message="PDF-Viewer wird geladen…" /> }
-);
 
 // ─── Local Storage Helpers ────────────────────────────────────────────────────
 
@@ -148,29 +141,9 @@ export function CvEditorShell({ candidates }: CvEditorShellProps) {
 
         {/* Right: Live Preview */}
         <div className="flex-1 min-h-0 bg-slate-100 dark:bg-slate-950">
-          <PDFViewer
-            width="100%"
-            height="100%"
-            showToolbar
-            className="border-0"
-          >
-            <CvPdfDocument data={cvData} config={stableConfig} />
-          </PDFViewer>
+          <PdfPreview data={cvData} config={stableConfig} />
         </div>
       </div>
     </FormProvider>
-  );
-}
-
-// ─── PDF Loading Placeholder ──────────────────────────────────────────────────
-
-function PdfPlaceholder({ message }: { message: string }) {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-950">
-      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-        <FileText className="h-10 w-10 animate-pulse" />
-        <span className="text-sm">{message}</span>
-      </div>
-    </div>
   );
 }
