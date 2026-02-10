@@ -5,34 +5,35 @@ import { Font, StyleSheet } from "@react-pdf/renderer";
 //    Google Fonts CDN liefert TTF direkt aus.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// fontsource CDN – reliable, CORS-enabled, serves raw .ttf files
 const OPEN_SANS_BASE =
-  "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/opensans/static";
+  "https://cdn.jsdelivr.net/fontsource/fonts/open-sans@latest/latin";
 
 Font.register({
   family: "OpenSans",
   fonts: [
     {
-      src: `${OPEN_SANS_BASE}/OpenSans-Light.ttf`,
+      src: `${OPEN_SANS_BASE}-300-normal.ttf`,
       fontWeight: 300,
       fontStyle: "normal",
     },
     {
-      src: `${OPEN_SANS_BASE}/OpenSans-Regular.ttf`,
+      src: `${OPEN_SANS_BASE}-400-normal.ttf`,
       fontWeight: 400,
       fontStyle: "normal",
     },
     {
-      src: `${OPEN_SANS_BASE}/OpenSans-Bold.ttf`,
+      src: `${OPEN_SANS_BASE}-700-normal.ttf`,
       fontWeight: 700,
       fontStyle: "normal",
     },
     {
-      src: `${OPEN_SANS_BASE}/OpenSans-Italic.ttf`,
+      src: `${OPEN_SANS_BASE}-400-italic.ttf`,
       fontWeight: 400,
       fontStyle: "italic",
     },
     {
-      src: `${OPEN_SANS_BASE}/OpenSans-BoldItalic.ttf`,
+      src: `${OPEN_SANS_BASE}-700-italic.ttf`,
       fontWeight: 700,
       fontStyle: "italic",
     },
