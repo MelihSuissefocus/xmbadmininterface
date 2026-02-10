@@ -38,6 +38,9 @@ export const CvTypographySchema = z.object({
 });
 
 export const CvDesignConfigSchema = z.object({
+  template: z
+    .enum(["iron-horse", "oehler"])
+    .default("iron-horse"),
   global: CvGlobalStyleSchema.default({
     primaryColor: "#333333",
     fontFamily: "Helvetica",

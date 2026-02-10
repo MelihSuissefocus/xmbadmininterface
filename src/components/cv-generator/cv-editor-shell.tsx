@@ -96,6 +96,7 @@ export function CvEditorShell({ candidates }: CvEditorShellProps) {
 
   // Stable config reference for PDFViewer (avoids re-render on every keystroke)
   const stableConfig = useMemo(() => designConfig, [
+    designConfig.template,
     designConfig.global.primaryColor,
     designConfig.global.fontFamily,
     designConfig.global.baseFontSize,

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
-import { Paintbrush, Type, Layout, Eye, Save } from "lucide-react";
+import { Paintbrush, Type, Layout, Eye, Save, FileText } from "lucide-react";
 
 interface DesignControlsProps {
   onSaveDefaults: () => void;
@@ -32,7 +32,42 @@ export function DesignControls({ onSaveDefaults }: DesignControlsProps) {
   const { control, watch, setValue } = useFormContext<CvDesignConfig>();
 
   return (
-    <Accordion type="multiple" defaultValue={["branding", "layout", "visibility"]} className="w-full">
+    <Accordion type="multiple" defaultValue={["template", "branding", "layout", "visibility"]} className="w-full">
+      {/* ── Template-Auswahl ─────────────────────────────── */}
+      <AccordionItem value="template">
+        <AccordionTrigger>
+          <span className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Template
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>CV-Vorlage</Label>
+            <Controller
+              control={control}
+              name="template"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="iron-horse">Iron Horse (Standard)</SelectItem>
+                    <SelectItem value="oehler">Stefan Oehler</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {watch("template") === "oehler"
+                ? "Lineares 2-Spalten-Layout (25/75) mit Inter-Schrift, modernem Header und Tabellenstruktur."
+                : "Deckblatt mit Foto + 2-Spalten-Layout (Sidebar/Main) auf Folgeseiten."}
+            </p>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
       {/* ── Branding ─────────────────────────────────────── */}
       <AccordionItem value="branding">
         <AccordionTrigger>

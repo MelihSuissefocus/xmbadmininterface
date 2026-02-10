@@ -33,13 +33,20 @@ export function PdfPreview({
       setError(null);
       try {
         // Dynamic import to ensure we only load on the client
-        const [{ pdf }, { CvPdfDocument }] = await Promise.all([
+        const [{ pdf }, ironHorseModule, oehlerModule] = await Promise.all([
           import("@react-pdf/renderer"),
           import("./pdf-template"),
+          import("./pdf-template-oehler"),
         ]);
         const { createElement } = await import("react");
 
-        const doc = createElement(CvPdfDocument, { data, config });
+        // Select the correct template based on config
+        const TemplateComponent =
+          config.template === "oehler"
+            ? oehlerModule.OehlerPdfDocument
+            : ironHorseModule.CvPdfDocument;
+
+        const doc = createElement(TemplateComponent, { data, config });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const blob = await pdf(doc as any).toBlob();
 
