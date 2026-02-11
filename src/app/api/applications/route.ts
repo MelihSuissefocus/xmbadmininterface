@@ -67,7 +67,7 @@ export async function POST(request: Request) {
             // nationality,
             // permit, 
             desiredHourlyRate: rate ? parseInt(rate) : null,
-            availableFrom: availability ? new Date(availability) : null,
+            availableFrom: availability || null,
             workloadPreference: desiredWorkload,
             // preferredWorkMode,
             // billing,
