@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/jobs", label: "Stellenmarkt", icon: Briefcase },
+  { href: "/dashboard/jobs", label: "Stellenausschreibung", icon: Briefcase },
   { href: "/dashboard/candidates", label: "Kandidaten", icon: Users },
   { href: "/dashboard/cv-generator", label: "CV Generator", icon: FileText },
   { href: "/dashboard/users", label: "Benutzerverwaltung", icon: ShieldCheck },

@@ -173,6 +173,14 @@ export const jobs = pgTable("jobs", {
   contactPerson: text("contact_person"),
   clientCompany: text("client_company"),
   internalNotes: text("internal_notes"),
+
+  // New fields for Job Board API
+  referenceNumber: text("reference_number").unique(),
+  industry: text("industry"),
+  endDate: date("end_date"),
+  languages: jsonb("languages").$type<{ lang: string; level: string }[]>(),
+  requirementsList: jsonb("requirements_list").$type<{ text: string; type: "must" | "nice" }[]>(),
+
   status: jobStatusEnum("status").default("draft").notNull(),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow(),
