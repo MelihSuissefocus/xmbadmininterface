@@ -170,10 +170,9 @@ export function JobForm({ job }: JobFormProps) {
             <Label htmlFor="referenceNumber">Referenznummer</Label>
             <Input
               id="referenceNumber"
-              value={formData.referenceNumber}
-              onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
-              placeholder="z.B. XMB-2025-042"
-              className="mt-1.5"
+              disabled
+              placeholder="Wird automatisch generiert"
+              className="mt-1.5 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed"
             />
           </div>
           <div className="md:col-span-1">

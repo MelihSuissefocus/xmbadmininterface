@@ -1,16 +1,70 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { jobs } from "@/db/schema";
+import { jobs, Job } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
+
+function transformJobForApi(job: Job) {
+    // Build requirements array from requirementsList, or from requiredSkills/niceToHaveSkills
+    let requirements: { text: string; type: "must" | "nice" }[] = [];
+    if (job.requirementsList && job.requirementsList.length > 0) {
+        requirements = job.requirementsList;
+    } else {
+        if (job.requiredSkills) {
+            requirements.push(...job.requiredSkills.map((s) => ({ text: s, type: "must" as const })));
+        }
+        if (job.niceToHaveSkills) {
+            requirements.push(...job.niceToHaveSkills.map((s) => ({ text: s, type: "nice" as const })));
+        }
+    }
+
+    // Combine skills
+    const skills = [
+        ...(job.requiredSkills ?? []),
+        ...(job.niceToHaveSkills ?? []),
+    ];
+
+    // Map workMode
+    let workMode: string = "onsite";
+    if (job.remote) {
+        const r = job.remote.toLowerCase();
+        if (r === "remote" || r === "full remote") workMode = "remote";
+        else if (r === "hybrid" || r === "flexibel") workMode = "hybrid";
+    }
+
+    // Map type
+    const type = job.type === "contract" ? "freelancer" : "festanstellung";
+
+    return {
+        id: job.id,
+        referenceNumber: job.referenceNumber,
+        title: job.title,
+        role: job.title, // use title as role since no separate role field
+        description: job.description ?? "",
+        requirements,
+        location: job.location ?? "",
+        workMode,
+        workload: job.workload ?? "",
+        type,
+        startDate: job.startDate ?? "",
+        endDate: job.endDate ?? "",
+        industry: job.industry ?? "",
+        skills,
+        language: job.languages ?? [],
+        published: true,
+        publishedAt: job.publishedAt?.toISOString().split("T")[0] ?? "",
+        contactPerson: job.contactPerson ?? "",
+    };
+}
 
 export async function GET(request: Request) {
     try {
         const publishedJobs = await db.select().from(jobs).where(eq(jobs.status, "published")).orderBy(desc(jobs.publishedAt));
 
-        const response = NextResponse.json(publishedJobs);
+        const transformed = publishedJobs.map(transformJobForApi);
+        const response = NextResponse.json(transformed);
 
         // Add CORS headers
         response.headers.set("Access-Control-Allow-Origin", "*"); // Customize this for production

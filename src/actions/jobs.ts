@@ -13,6 +13,13 @@ interface ActionResult {
 
 export async function createJob(data: NewJob): Promise<ActionResult> {
   try {
+    // Auto-generate reference number if not provided
+    if (!data.referenceNumber) {
+      const year = new Date().getFullYear();
+      const random = Math.floor(1000 + Math.random() * 9000); // 4 digit random
+      data.referenceNumber = `XMB-${year}-${random}`;
+    }
+
     const [job] = await db.insert(jobs).values(data).returning();
     revalidatePath("/dashboard/jobs");
     revalidatePath("/dashboard");
@@ -26,11 +33,11 @@ export async function createJob(data: NewJob): Promise<ActionResult> {
 export async function updateJob(id: string, data: Partial<NewJob>): Promise<ActionResult> {
   try {
     const updateData = { ...data, updatedAt: new Date() };
-    
+
     if (data.status === "published" && !data.publishedAt) {
       updateData.publishedAt = new Date();
     }
-    
+
     const [job] = await db
       .update(jobs)
       .set(updateData)
