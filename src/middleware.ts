@@ -9,7 +9,9 @@ export default auth((req) => {
     nextUrl.pathname === "/login" ||
     nextUrl.pathname === "/forgot-password" ||
     nextUrl.pathname === "/reset-password" ||
-    nextUrl.pathname.startsWith("/api/auth");
+    nextUrl.pathname.startsWith("/api/auth") ||
+    nextUrl.pathname.startsWith("/api/jobs") ||
+    nextUrl.pathname.startsWith("/api/applications");
 
   if (nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL(isLoggedIn ? "/dashboard" : "/login", nextUrl));
