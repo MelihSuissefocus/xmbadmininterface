@@ -379,13 +379,13 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* CV Upload Section */}
         {!candidate && (
-          <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
             <div className="flex flex-col gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                <h2 className="text-base lg:text-lg font-semibold text-foreground mb-2">
                   CV hochladen
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   Laden Sie einen Lebenslauf hoch, um Felder automatisch auszufüllen
                 </p>
               </div>
@@ -403,8 +403,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         )}
 
         {/* Basic Info */}
-        <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+        <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
             Persönliche Daten
           </h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -506,7 +506,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               id="canton"
               value={formData.canton}
               onChange={(e) => setFormData({ ...formData, canton: e.target.value })}
-              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="">-- Kanton auswählen --</option>
               <option value="AG">Aargau</option>
@@ -541,8 +541,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Professional Info */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Berufliche Informationen
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -627,7 +627,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   id="companyType"
                   value={formData.companyType}
                   onChange={(e) => setFormData({ ...formData, companyType: e.target.value })}
-                  className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                  className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                 >
                   <option value="">-- Rechtsform auswählen --</option>
                   <option value="ag">AG</option>
@@ -645,7 +645,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               onChange={(e) =>
                 setFormData({ ...formData, workloadPreference: e.target.value })
               }
-              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="100%">100%</option>
               <option value="80-100%">80-100%</option>
@@ -685,7 +685,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   status: e.target.value as "new" | "reviewed" | "rejected" | "placed",
                 })
               }
-              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="new">Neu</option>
               <option value="reviewed">In Prüfung</option>
@@ -697,8 +697,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Skills */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Skills
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -709,8 +709,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               onClick={() => toggleSkill(skill.name)}
               className={`rounded-full px-3 py-1 text-sm font-medium transition-all ${
                 selectedSkills.includes(skill.name)
-                  ? "bg-amber-500 text-black"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
               {skill.name}
@@ -718,16 +718,16 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
           ))}
         </div>
         {availableSkills.length === 0 && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Keine Skills verfügbar. Bitte fügen Sie Skills in den Einstellungen hinzu.
           </p>
         )}
       </section>
 
       {/* Languages */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
             Sprachen
           </h2>
           <Button type="button" onClick={addLanguage} variant="outline" size="sm">
@@ -736,11 +736,11 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </div>
         <div className="space-y-3">
           {languages.map((lang, i) => (
-            <div key={i} className="flex items-center gap-3">
+            <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <select
                 value={lang.language}
                 onChange={(e) => updateLanguage(i, "language", e.target.value)}
-                className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm"
               >
                 <option value="">-- Sprache auswählen --</option>
                 {WORLD_LANGUAGES.map((language) => (
@@ -752,7 +752,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               <select
                 value={lang.level}
                 onChange={(e) => updateLanguage(i, "level", e.target.value)}
-                className="w-48 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                className="w-full sm:w-48 rounded-md border border-border bg-card px-3 py-2 text-sm"
               >
                 {LANGUAGE_LEVELS.map((level) => (
                   <option key={level.value} value={level.value}>
@@ -775,9 +775,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Certificates */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
             Zertifikate
           </h2>
           <Button type="button" onClick={addCertificate} variant="outline" size="sm">
@@ -786,7 +786,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </div>
         <div className="space-y-4">
           {certificates.map((cert, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg dark:bg-slate-800">
+            <div key={i} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
               <div className="flex-1 grid gap-3 md:grid-cols-3">
                 <Input
                   value={cert.name}
@@ -819,9 +819,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Education */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
             Ausbildung
           </h2>
           <Button type="button" onClick={addEducation} variant="outline" size="sm">
@@ -830,7 +830,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </div>
         <div className="space-y-4">
           {education.map((edu, i) => (
-            <div key={i} className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg dark:bg-slate-800">
+            <div key={i} className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
               <div className="flex-1 space-y-3">
                 <div className="grid gap-3 md:grid-cols-2">
                   <Input
@@ -844,13 +844,13 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                     placeholder="Institution"
                   />
                 </div>
-                <div className="grid gap-3 md:grid-cols-4">
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
                   <div>
-                    <Label className="text-xs text-slate-500">Von Monat</Label>
+                    <Label className="text-xs text-muted-foreground">Von Monat</Label>
                     <select
                       value={edu.startMonth}
                       onChange={(e) => updateEducation(i, "startMonth", e.target.value)}
-                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                      className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                     >
                       <option value="">--</option>
                       {MONTHS.map((month) => (
@@ -861,11 +861,11 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-500">Von Jahr</Label>
+                    <Label className="text-xs text-muted-foreground">Von Jahr</Label>
                     <select
                       value={edu.startYear}
                       onChange={(e) => updateEducation(i, "startYear", e.target.value)}
-                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                      className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                     >
                       <option value="">--</option>
                       {years.map((year) => (
@@ -876,11 +876,11 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-500">Bis Monat</Label>
+                    <Label className="text-xs text-muted-foreground">Bis Monat</Label>
                     <select
                       value={edu.endMonth}
                       onChange={(e) => updateEducation(i, "endMonth", e.target.value)}
-                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                      className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                     >
                       <option value="">--</option>
                       {MONTHS.map((month) => (
@@ -891,11 +891,11 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-500">Bis Jahr</Label>
+                    <Label className="text-xs text-muted-foreground">Bis Jahr</Label>
                     <select
                       value={edu.endYear}
                       onChange={(e) => updateEducation(i, "endYear", e.target.value)}
-                      className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                      className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                     >
                       <option value="">--</option>
                       {years.map((year) => (
@@ -922,9 +922,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Experience */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
             Berufserfahrung
           </h2>
           <Button type="button" onClick={addExperience} variant="outline" size="sm">
@@ -933,7 +933,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </div>
         <div className="space-y-4">
           {experience.map((exp, i) => (
-            <div key={i} className="p-4 bg-slate-50 rounded-lg dark:bg-slate-800 space-y-3">
+            <div key={i} className="p-4 bg-muted/50 rounded-lg space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1 grid gap-3 md:grid-cols-2">
                   <Input
@@ -957,13 +957,13 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="grid gap-3 md:grid-cols-5">
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-5">
                 <div>
-                  <Label className="text-xs text-slate-500">Von Monat</Label>
+                  <Label className="text-xs text-muted-foreground">Von Monat</Label>
                   <select
                     value={exp.startMonth}
                     onChange={(e) => updateExperience(i, "startMonth", e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                   >
                     <option value="">--</option>
                     {MONTHS.map((month) => (
@@ -974,11 +974,11 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-500">Von Jahr</Label>
+                  <Label className="text-xs text-muted-foreground">Von Jahr</Label>
                   <select
                     value={exp.startYear}
                     onChange={(e) => updateExperience(i, "startYear", e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                   >
                     <option value="">--</option>
                     {years.map((year) => (
@@ -989,12 +989,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-500">Bis Monat</Label>
+                  <Label className="text-xs text-muted-foreground">Bis Monat</Label>
                   <select
                     value={exp.endMonth}
                     onChange={(e) => updateExperience(i, "endMonth", e.target.value)}
                     disabled={exp.current}
-                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900 disabled:opacity-50"
+                    className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm disabled:opacity-50"
                   >
                     <option value="">--</option>
                     {MONTHS.map((month) => (
@@ -1005,12 +1005,12 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-500">Bis Jahr</Label>
+                  <Label className="text-xs text-muted-foreground">Bis Jahr</Label>
                   <select
                     value={exp.endYear}
                     onChange={(e) => updateExperience(i, "endYear", e.target.value)}
                     disabled={exp.current}
-                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900 disabled:opacity-50"
+                    className="mt-1 w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm disabled:opacity-50"
                   >
                     <option value="">--</option>
                     {years.map((year) => (
@@ -1040,7 +1040,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                 onChange={(e) => updateExperience(i, "description", e.target.value)}
                 placeholder="Beschreibung der Tätigkeiten..."
                 rows={3}
-                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
               />
             </div>
           ))}
@@ -1048,9 +1048,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Highlights */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
             Highlights
           </h2>
           <Button 
@@ -1064,14 +1064,14 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
           </Button>
         </div>
         {highlights.length >= 4 && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+          <p className="text-xs text-accent mb-3">
             Maximal 4 Highlights erlaubt
           </p>
         )}
         <div className="space-y-3">
           {highlights.map((highlight, i) => (
-            <div key={i} className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg dark:bg-slate-800">
-              <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-black text-xs font-semibold mt-1">
+            <div key={i} className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+              <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-accent text-accent-foreground text-xs font-semibold mt-1">
                 {i + 1}
               </div>
               <textarea
@@ -1079,7 +1079,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                 onChange={(e) => updateHighlight(i, e.target.value)}
                 placeholder="Bulletsatz / Highlight eingeben (min. 200 Wörter empfohlen)..."
                 rows={4}
-                className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 resize-y"
+                className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm resize-y"
               />
               <Button
                 type="button"
@@ -1093,7 +1093,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
             </div>
           ))}
           {highlights.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4">
               Keine Highlights hinzugefügt. Klicken Sie auf &quot;Hinzufügen&quot;, um ein Highlight zu erstellen.
             </p>
           )}
@@ -1101,8 +1101,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       </section>
 
       {/* Notes */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Interne Notizen
         </h2>
         <textarea
@@ -1110,7 +1110,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Interne Notizen zum Kandidaten..."
           rows={4}
-          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
         />
       </section>
 
@@ -1120,7 +1120,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex items-center justify-end gap-3 sticky bottom-16 lg:bottom-0 bg-background/95 backdrop-blur-sm py-3 -mx-4 px-4 lg:mx-0 lg:px-0 lg:bg-transparent lg:backdrop-blur-none border-t border-border lg:border-0">
         <Button
           type="button"
           variant="outline"
@@ -1132,7 +1132,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="bg-amber-500 hover:bg-amber-400 text-black"
+          className="bg-accent hover:bg-accent/90 text-accent-foreground"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />

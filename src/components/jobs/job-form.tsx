@@ -161,8 +161,8 @@ export function JobForm({ job }: JobFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Basic Info */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Grundinformationen
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -172,7 +172,7 @@ export function JobForm({ job }: JobFormProps) {
               id="referenceNumber"
               disabled
               placeholder="Wird automatisch generiert"
-              className="mt-1.5 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed"
+              className="mt-1.5 bg-muted cursor-not-allowed"
             />
           </div>
           <div className="md:col-span-1">
@@ -202,7 +202,7 @@ export function JobForm({ job }: JobFormProps) {
               id="type"
               value={formData.type}
               onChange={(e) => handleTypeChange(e.target.value as "permanent" | "contract")}
-              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="permanent">Festanstellung</option>
               <option value="contract">Contracting</option>
@@ -214,7 +214,7 @@ export function JobForm({ job }: JobFormProps) {
               id="status"
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as "draft" | "published" | "archived" })}
-              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="draft">Entwurf</option>
               <option value="published">Veröffentlicht</option>
@@ -255,9 +255,9 @@ export function JobForm({ job }: JobFormProps) {
       </section>
 
       {/* Languages */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
             Sprachen
           </h2>
           <Button type="button" variant="outline" size="sm" onClick={addLanguage}>
@@ -284,7 +284,7 @@ export function JobForm({ job }: JobFormProps) {
                   id={`level-${index}`}
                   value={lang.level}
                   onChange={(e) => updateLanguage(index, "level", e.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                  className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                 >
                   <option value="">Wählen...</option>
                   <option value="A1">A1</option>
@@ -314,8 +314,8 @@ export function JobForm({ job }: JobFormProps) {
       </section>
 
       {/* Location & Work Details */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Arbeitsort & Konditionen
         </h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -335,7 +335,7 @@ export function JobForm({ job }: JobFormProps) {
               id="remote"
               value={formData.remote}
               onChange={(e) => setFormData({ ...formData, remote: e.target.value })}
-              className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="mt-1.5 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="">Vor Ort</option>
               <option value="Hybrid">Hybrid</option>
@@ -380,8 +380,8 @@ export function JobForm({ job }: JobFormProps) {
 
       {/* Salary/Rate Section - Conditional */}
       {formData.type === "permanent" ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+        <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
             Gehalt (Festanstellung)
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
@@ -410,8 +410,8 @@ export function JobForm({ job }: JobFormProps) {
           </div>
         </section>
       ) : (
-        <section className="rounded-xl border border-violet-200 bg-violet-50 p-6 dark:border-violet-800 dark:bg-violet-900/20">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+        <section className="rounded-xl border border-violet-200 bg-violet-50 p-4 lg:p-6 dark:border-violet-800 dark:bg-violet-900/20">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
             Contracting - Raten & Abrechnungsmodell
           </h2>
 
@@ -422,7 +422,7 @@ export function JobForm({ job }: JobFormProps) {
               <label
                 className={`flex items-center gap-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${formData.contractBilling === "payroll"
                   ? "border-violet-500 bg-violet-100 dark:bg-violet-900/40"
-                  : "border-slate-200 hover:border-violet-300 dark:border-slate-700"
+                  : "border-border hover:border-violet-300"
                   }`}
               >
                 <input
@@ -434,15 +434,15 @@ export function JobForm({ job }: JobFormProps) {
                   className="h-4 w-4 text-violet-600"
                 />
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-white">Nur Payroll</p>
-                  <p className="text-xs text-slate-500">Abrechnung über Payroll</p>
+                  <p className="font-medium text-foreground">Nur Payroll</p>
+                  <p className="text-xs text-muted-foreground">Abrechnung über Payroll</p>
                 </div>
               </label>
 
               <label
                 className={`flex items-center gap-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${formData.contractBilling === "company"
                   ? "border-violet-500 bg-violet-100 dark:bg-violet-900/40"
-                  : "border-slate-200 hover:border-violet-300 dark:border-slate-700"
+                  : "border-border hover:border-violet-300"
                   }`}
               >
                 <input
@@ -454,15 +454,15 @@ export function JobForm({ job }: JobFormProps) {
                   className="h-4 w-4 text-violet-600"
                 />
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-white">Über Firma</p>
-                  <p className="text-xs text-slate-500">Verrechnung über eigene Firma</p>
+                  <p className="font-medium text-foreground">Über Firma</p>
+                  <p className="text-xs text-muted-foreground">Verrechnung über eigene Firma</p>
                 </div>
               </label>
 
               <label
                 className={`flex items-center gap-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${formData.contractBilling === "hybrid"
                   ? "border-violet-500 bg-violet-100 dark:bg-violet-900/40"
-                  : "border-slate-200 hover:border-violet-300 dark:border-slate-700"
+                  : "border-border hover:border-violet-300"
                   }`}
               >
                 <input
@@ -474,8 +474,8 @@ export function JobForm({ job }: JobFormProps) {
                   className="h-4 w-4 text-violet-600"
                 />
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-white">Hybrid</p>
-                  <p className="text-xs text-slate-500">Hybrid Modell</p>
+                  <p className="font-medium text-foreground">Hybrid</p>
+                  <p className="text-xs text-muted-foreground">Hybrid Modell</p>
                 </div>
               </label>
             </div>
@@ -491,9 +491,9 @@ export function JobForm({ job }: JobFormProps) {
                 value={formData.ratePayroll || ""}
                 onChange={(e) => setFormData({ ...formData, ratePayroll: parseInt(e.target.value) || 0 })}
                 placeholder="z.B. 95"
-                className="mt-1.5 bg-white dark:bg-slate-800"
+                className="mt-1.5 bg-card"
               />
-              <p className="text-xs text-slate-500 mt-1">Für Kandidaten über Payroll</p>
+              <p className="text-xs text-muted-foreground mt-1">Für Kandidaten über Payroll</p>
             </div>
             <div>
               <Label htmlFor="rateCompany">All-in Stundensatz über Firma (CHF)</Label>
@@ -503,17 +503,17 @@ export function JobForm({ job }: JobFormProps) {
                 value={formData.rateCompany || ""}
                 onChange={(e) => setFormData({ ...formData, rateCompany: parseInt(e.target.value) || 0 })}
                 placeholder="z.B. 120"
-                className="mt-1.5 bg-white dark:bg-slate-800"
+                className="mt-1.5 bg-card"
               />
-              <p className="text-xs text-slate-500 mt-1">Für Kandidaten mit eigener Firma</p>
+              <p className="text-xs text-muted-foreground mt-1">Für Kandidaten mit eigener Firma</p>
             </div>
           </div>
         </section>
       )}
 
       {/* Required Skills */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Erforderliche Skills
         </h2>
         <div className="flex gap-2 mb-4">
@@ -557,8 +557,8 @@ export function JobForm({ job }: JobFormProps) {
       </section>
 
       {/* Nice to Have Skills */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Nice-to-Have Skills
         </h2>
         <div className="flex gap-2 mb-4">
@@ -596,7 +596,7 @@ export function JobForm({ job }: JobFormProps) {
           {niceToHaveSkills.map((skill, i) => (
             <span
               key={i}
-              className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+              className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm text-muted-foreground"
             >
               {skill}
               <button
@@ -612,8 +612,8 @@ export function JobForm({ job }: JobFormProps) {
       </section>
 
       {/* Description */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Stellenbeschreibung
         </h2>
         <textarea
@@ -621,13 +621,13 @@ export function JobForm({ job }: JobFormProps) {
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Ausführliche Beschreibung der Position..."
           rows={6}
-          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
         />
       </section>
 
       {/* Requirements */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Anforderungen
         </h2>
         <textarea
@@ -635,13 +635,13 @@ export function JobForm({ job }: JobFormProps) {
           onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
           placeholder="Was wird vom Kandidaten erwartet..."
           rows={4}
-          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
         />
       </section>
 
       {/* Benefits */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Benefits
         </h2>
         <textarea
@@ -649,13 +649,13 @@ export function JobForm({ job }: JobFormProps) {
           onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
           placeholder="Was wird geboten (z.B. Homeoffice, Weiterbildung, etc.)..."
           rows={4}
-          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
         />
       </section>
 
       {/* Internal Notes */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+      <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
           Interne Notizen
         </h2>
         <textarea
@@ -663,7 +663,7 @@ export function JobForm({ job }: JobFormProps) {
           onChange={(e) => setFormData({ ...formData, internalNotes: e.target.value })}
           placeholder="Interne Notizen zur Stelle..."
           rows={3}
-          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
         />
       </section>
 
@@ -680,7 +680,7 @@ export function JobForm({ job }: JobFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="bg-amber-500 hover:bg-amber-400 text-black"
+          className="bg-accent hover:bg-accent/90 text-accent-foreground"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />

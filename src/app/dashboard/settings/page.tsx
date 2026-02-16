@@ -25,25 +25,27 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+        <h1 className="text-xl lg:text-2xl font-bold text-foreground">
           Einstellungen
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-muted-foreground text-sm mt-0.5">
           Verwalte alle Systemeinstellungen und Konfigurationen
         </p>
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="users">Benutzer</TabsTrigger>
-          <TabsTrigger value="skills">Skills</TabsTrigger>
-          <TabsTrigger value="organization">Unternehmen</TabsTrigger>
-          <TabsTrigger value="system">System</TabsTrigger>
-          <TabsTrigger value="email">E-Mail-Vorlagen</TabsTrigger>
-          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto scrollbar-none -mx-4 px-4 lg:mx-0 lg:px-0">
+          <TabsList className="w-max lg:w-full justify-start">
+            <TabsTrigger value="users" className="text-xs lg:text-sm">Benutzer</TabsTrigger>
+            <TabsTrigger value="skills" className="text-xs lg:text-sm">Skills</TabsTrigger>
+            <TabsTrigger value="organization" className="text-xs lg:text-sm">Unternehmen</TabsTrigger>
+            <TabsTrigger value="system" className="text-xs lg:text-sm">System</TabsTrigger>
+            <TabsTrigger value="email" className="text-xs lg:text-sm">E-Mail</TabsTrigger>
+            <TabsTrigger value="audit" className="text-xs lg:text-sm">Audit</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="users" className="space-y-4">
           <UserManagement initialUsers={users} />
@@ -72,4 +74,3 @@ export default async function SettingsPage() {
     </div>
   );
 }
-

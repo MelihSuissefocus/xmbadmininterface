@@ -20,10 +20,10 @@ interface CandidateDetailPageProps {
 }
 
 const statusColors = {
-  new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  reviewed: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  placed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  new: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  reviewed: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  rejected: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  placed: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
 };
 
 const statusLabels = {
@@ -59,20 +59,20 @@ export default async function CandidateDetailPage({
   }[]) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-2xl font-semibold text-amber-400">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex items-center gap-3 lg:gap-4">
+          <div className="flex h-12 w-12 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-primary text-lg lg:text-2xl font-semibold text-accent flex-shrink-0">
             {candidate.firstName[0]}{candidate.lastName[0]}
           </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl lg:text-2xl font-bold text-foreground">
                 {candidate.firstName} {candidate.lastName}
               </h1>
               <span
-                className={`rounded-full px-3 py-1 text-sm font-medium ${
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   statusColors[candidate.status]
                 }`}
               >
@@ -80,50 +80,50 @@ export default async function CandidateDetailPage({
               </span>
             </div>
             {candidate.targetRole && (
-              <p className="text-lg text-slate-500 dark:text-slate-400">
+              <p className="text-sm lg:text-base text-muted-foreground mt-0.5">
                 {candidate.targetRole}
               </p>
             )}
           </div>
         </div>
         <Link href={`/dashboard/candidates/${id}/edit`}>
-          <Button className="bg-amber-500 hover:bg-amber-400 text-black">
+          <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto">
             <Edit className="h-4 w-4 mr-2" />
             Bearbeiten
           </Button>
         </Link>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:gap-6 lg:grid-cols-3">
         {/* Left Column */}
-        <div className="space-y-6">
+        <div className="space-y-4 lg:space-y-6">
           {/* Contact Info */}
-          <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+            <h2 className="text-sm font-semibold text-foreground mb-3">
               Kontakt
             </h2>
             <div className="space-y-3">
               {candidate.email && (
                 <a
                   href={`mailto:${candidate.email}`}
-                  className="flex items-center gap-3 text-slate-600 hover:text-amber-500 dark:text-slate-400"
+                  className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent"
                 >
-                  <Mail className="h-5 w-5" />
-                  <span>{candidate.email}</span>
+                  <Mail className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{candidate.email}</span>
                 </a>
               )}
               {candidate.phone && (
                 <a
                   href={`tel:${candidate.phone}`}
-                  className="flex items-center gap-3 text-slate-600 hover:text-amber-500 dark:text-slate-400"
+                  className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent"
                 >
-                  <Phone className="h-5 w-5" />
+                  <Phone className="h-4 w-4 flex-shrink-0" />
                   <span>{candidate.phone}</span>
                 </a>
               )}
               {(candidate.street || candidate.city || candidate.postalCode || candidate.canton) && (
-                <div className="flex items-start gap-3 text-slate-600 dark:text-slate-400">
-                  <MapPin className="h-5 w-5 mt-0.5" />
+                <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col">
                     {candidate.street && <span>{candidate.street}</span>}
                     {(candidate.postalCode || candidate.city) && (
@@ -141,9 +141,9 @@ export default async function CandidateDetailPage({
                   href={candidate.linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-slate-600 hover:text-amber-500 dark:text-slate-400"
+                  className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent"
                 >
-                  <Linkedin className="h-5 w-5" />
+                  <Linkedin className="h-4 w-4 flex-shrink-0" />
                   <span>LinkedIn Profil</span>
                 </a>
               )}
@@ -151,61 +151,57 @@ export default async function CandidateDetailPage({
           </section>
 
           {/* Professional Info */}
-          <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+            <h2 className="text-sm font-semibold text-foreground mb-3">
               Berufliches
             </h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
               {candidate.yearsOfExperience && (
                 <div>
-                  <p className="text-sm text-slate-500">Erfahrung</p>
-                  <p className="font-medium text-slate-900 dark:text-white">
+                  <p className="text-xs text-muted-foreground">Erfahrung</p>
+                  <p className="text-sm font-medium text-foreground">
                     {candidate.yearsOfExperience} Jahre
                   </p>
                 </div>
               )}
               {candidate.workloadPreference && (
                 <div>
-                  <p className="text-sm text-slate-500">Pensum</p>
-                  <p className="font-medium text-slate-900 dark:text-white">
+                  <p className="text-xs text-muted-foreground">Pensum</p>
+                  <p className="text-sm font-medium text-foreground">
                     {candidate.workloadPreference}
                   </p>
                 </div>
               )}
               {candidate.availableFrom && (
                 <div>
-                  <p className="text-sm text-slate-500">Verfügbar ab</p>
-                  <p className="font-medium text-slate-900 dark:text-white">
+                  <p className="text-xs text-muted-foreground">Verfügbar ab</p>
+                  <p className="text-sm font-medium text-foreground">
                     {new Date(candidate.availableFrom).toLocaleDateString("de-CH")}
                   </p>
                 </div>
               )}
               {candidate.noticePeriod && (
                 <div>
-                  <p className="text-sm text-slate-500">Kündigungsfrist</p>
-                  <p className="font-medium text-slate-900 dark:text-white">
+                  <p className="text-xs text-muted-foreground">Kündigungsfrist</p>
+                  <p className="text-sm font-medium text-foreground">
                     {candidate.noticePeriod}
                   </p>
                 </div>
               )}
-              {(candidate.currentSalary || candidate.expectedSalary) && (
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                  {candidate.currentSalary && (
-                    <div className="mb-2">
-                      <p className="text-sm text-slate-500">Aktuelles Gehalt</p>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        CHF {candidate.currentSalary.toLocaleString("de-CH")}
-                      </p>
-                    </div>
-                  )}
-                  {candidate.expectedSalary && (
-                    <div>
-                      <p className="text-sm text-slate-500">Gehaltsvorstellung</p>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        CHF {candidate.expectedSalary.toLocaleString("de-CH")}
-                      </p>
-                    </div>
-                  )}
+              {candidate.currentSalary && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Aktuelles Gehalt</p>
+                  <p className="text-sm font-medium text-foreground">
+                    CHF {candidate.currentSalary.toLocaleString("de-CH")}
+                  </p>
+                </div>
+              )}
+              {candidate.expectedSalary && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Gehaltsvorstellung</p>
+                  <p className="text-sm font-medium text-foreground">
+                    CHF {candidate.expectedSalary.toLocaleString("de-CH")}
+                  </p>
                 </div>
               )}
             </div>
@@ -213,16 +209,16 @@ export default async function CandidateDetailPage({
 
           {/* Languages */}
           {languages.length > 0 && (
-            <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                <Languages className="h-5 w-5" />
+            <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+                <Languages className="h-4 w-4" />
                 Sprachen
               </h2>
               <div className="space-y-2">
                 {languages.map((lang, i) => (
                   <div key={i} className="flex items-center justify-between">
-                    <span className="text-slate-900 dark:text-white">{lang.language}</span>
-                    <span className="text-sm text-slate-500">{lang.level}</span>
+                    <span className="text-sm text-foreground">{lang.language}</span>
+                    <span className="text-xs text-muted-foreground">{lang.level}</span>
                   </div>
                 ))}
               </div>
@@ -231,18 +227,18 @@ export default async function CandidateDetailPage({
         </div>
 
         {/* Right Column (2 cols) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 lg:space-y-6">
           {/* Skills */}
           {skills.length > 0 && (
-            <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-3">
                 Skills
               </h2>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {skills.map((skill, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                    className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
                   >
                     {skill}
                   </span>
@@ -253,25 +249,25 @@ export default async function CandidateDetailPage({
 
           {/* Experience */}
           {experience.length > 0 && (
-            <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                <Briefcase className="h-5 w-5" />
+            <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+                <Briefcase className="h-4 w-4" />
                 Berufserfahrung
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {experience.map((exp, i) => (
-                  <div key={i} className="relative pl-6 border-l-2 border-slate-200 dark:border-slate-700">
-                    <div className="absolute -left-2 top-0 h-4 w-4 rounded-full bg-amber-500" />
+                  <div key={i} className="relative pl-5 border-l-2 border-border">
+                    <div className="absolute -left-[5px] top-0.5 h-2 w-2 rounded-full bg-accent" />
                     <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-white">
+                      <h3 className="font-medium text-sm text-foreground">
                         {exp.role}
                       </h3>
-                      <p className="text-slate-600 dark:text-slate-400">{exp.company}</p>
-                      <p className="text-sm text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground">{exp.company}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {exp.startMonth} {exp.startYear} – {exp.current ? "Heute" : `${exp.endMonth} ${exp.endYear}`}
                       </p>
                       {exp.description && (
-                        <p className="mt-2 text-slate-600 dark:text-slate-400">
+                        <p className="mt-2 text-sm text-muted-foreground">
                           {exp.description}
                         </p>
                       )}
@@ -284,19 +280,19 @@ export default async function CandidateDetailPage({
 
           {/* Education */}
           {education.length > 0 && (
-            <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                <GraduationCap className="h-5 w-5" />
+            <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+                <GraduationCap className="h-4 w-4" />
                 Ausbildung
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {education.map((edu, i) => (
                   <div key={i}>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                    <h3 className="font-medium text-sm text-foreground">
                       {edu.degree}
                     </h3>
-                    <p className="text-slate-600 dark:text-slate-400">{edu.institution}</p>
-                    <p className="text-sm text-slate-500">{edu.startMonth} {edu.startYear} – {edu.endMonth} {edu.endYear}</p>
+                    <p className="text-xs text-muted-foreground">{edu.institution}</p>
+                    <p className="text-xs text-muted-foreground">{edu.startMonth} {edu.startYear} – {edu.endMonth} {edu.endYear}</p>
                   </div>
                 ))}
               </div>
@@ -305,23 +301,23 @@ export default async function CandidateDetailPage({
 
           {/* Certificates */}
           {certificates.length > 0 && (
-            <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                <Award className="h-5 w-5" />
+            <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+                <Award className="h-4 w-4" />
                 Zertifikate
               </h2>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {certificates.map((cert, i) => (
                   <div
                     key={i}
-                    className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800"
+                    className="rounded-lg bg-muted/50 p-3"
                   >
-                    <h3 className="font-medium text-slate-900 dark:text-white">
+                    <h3 className="font-medium text-sm text-foreground">
                       {cert.name}
                     </h3>
-                    <p className="text-sm text-slate-500">{cert.issuer}</p>
+                    <p className="text-xs text-muted-foreground">{cert.issuer}</p>
                     {cert.date && (
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(cert.date).toLocaleDateString("de-CH")}
                       </p>
                     )}
@@ -333,12 +329,12 @@ export default async function CandidateDetailPage({
 
           {/* Notes */}
           {candidate.notes && (
-            <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                <FileText className="h-5 w-5" />
+            <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+                <FileText className="h-4 w-4" />
                 Interne Notizen
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {candidate.notes}
               </p>
             </section>
@@ -348,4 +344,3 @@ export default async function CandidateDetailPage({
     </div>
   );
 }
-

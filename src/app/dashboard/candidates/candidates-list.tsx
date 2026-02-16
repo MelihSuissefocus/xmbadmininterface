@@ -28,10 +28,10 @@ interface CandidatesListProps {
 }
 
 const statusColors = {
-  new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  reviewed: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  placed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  new: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  reviewed: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  rejected: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  placed: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
 };
 
 const statusLabels = {
@@ -140,83 +140,79 @@ export function CandidatesList({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl lg:text-2xl font-bold text-foreground">
             Kandidaten
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {filteredCandidates.length} von {candidates.length} Kandidaten
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {filteredCandidates.length} von {candidates.length}
           </p>
         </div>
         <Link href="/dashboard/candidates/new">
-          <Button className="bg-amber-500 hover:bg-amber-400 text-black">
-            <Plus className="h-4 w-4 mr-2" />
-            Neuer Kandidat
+          <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground lg:h-9">
+            <Plus className="h-4 w-4 lg:mr-2" />
+            <span className="hidden lg:inline">Neuer Kandidat</span>
           </Button>
         </Link>
       </div>
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col gap-3">
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Suche nach Name, E-Mail, Rolle, Skills..."
-              className="pl-10"
+              placeholder="Name, E-Mail, Skills..."
+              className="pl-10 h-10"
             />
           </div>
           <Button
             variant="outline"
+            size="icon"
             onClick={() => setShowFilters(!showFilters)}
-            className={activeFiltersCount > 0 ? "border-amber-500 text-amber-600" : ""}
+            className={`h-10 w-10 flex-shrink-0 lg:w-auto lg:px-3 ${activeFiltersCount > 0 ? "border-accent text-accent" : ""}`}
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
+            <Filter className="h-4 w-4" />
+            <span className="hidden lg:inline lg:ml-2">Filter</span>
             {activeFiltersCount > 0 && (
-              <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-xs text-black">
+              <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] text-accent-foreground">
                 {activeFiltersCount}
               </span>
-            )}
-            {showFilters ? (
-              <ChevronUp className="h-4 w-4 ml-2" />
-            ) : (
-              <ChevronDown className="h-4 w-4 ml-2" />
             )}
           </Button>
         </div>
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900 dark:text-white">Filter</h3>
+              <h3 className="text-sm font-semibold text-foreground">Filter</h3>
               {activeFiltersCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-1" />
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
+                  <X className="h-3 w-3 mr-1" />
                   Zurücksetzen
                 </Button>
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Status */}
               <div>
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
                   Status
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {(["new", "reviewed", "rejected", "placed"] as const).map((status) => (
                     <button
                       key={status}
                       onClick={() => toggleArrayFilter(status, statusFilter, setStatusFilter)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                         statusFilter.includes(status)
-                          ? statusColors[status] + " ring-2 ring-offset-1 ring-slate-400"
-                          : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          ? statusColors[status] + " ring-2 ring-offset-1 ring-border"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {statusLabels[status]}
@@ -227,7 +223,7 @@ export function CandidatesList({
 
               {/* Experience */}
               <div>
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
                   Min. Erfahrung (Jahre)
                 </label>
                 <Input
@@ -238,18 +234,20 @@ export function CandidatesList({
                     setMinExperience(e.target.value ? parseInt(e.target.value) : "")
                   }
                   placeholder="z.B. 5"
+                  className="h-9"
                 />
               </div>
 
               {/* Location */}
               <div>
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
                   Standort
                 </label>
                 <Input
                   value={locationFilter}
                   onChange={(e) => setLocationFilter(e.target.value)}
                   placeholder="PLZ, Ort oder Kanton"
+                  className="h-9"
                 />
               </div>
             </div>
@@ -257,18 +255,18 @@ export function CandidatesList({
             {/* Skills */}
             {availableSkills.length > 0 && (
               <div>
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
                   Skills (alle müssen vorhanden sein)
                 </label>
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                   {availableSkills.map((skill) => (
                     <button
                       key={skill}
                       onClick={() => toggleArrayFilter(skill, skillsFilter, setSkillsFilter)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                         skillsFilter.includes(skill)
-                          ? "bg-amber-500 text-black"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
                       {skill}
@@ -281,20 +279,20 @@ export function CandidatesList({
             {/* Certificates */}
             {availableCertificates.length > 0 && (
               <div>
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
-                  Zertifikate (mind. eines muss vorhanden sein)
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                  Zertifikate (mind. eines)
                 </label>
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                   {availableCertificates.map((cert) => (
                     <button
                       key={cert}
                       onClick={() =>
                         toggleArrayFilter(cert, certificatesFilter, setCertificatesFilter)
                       }
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                         certificatesFilter.includes(cert)
                           ? "bg-violet-500 text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
                       {cert}
@@ -309,15 +307,15 @@ export function CandidatesList({
 
       {/* Candidates List */}
       {filteredCandidates.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-slate-500">
+        <div className="rounded-xl border border-border bg-card p-12 text-center">
+          <p className="text-sm text-muted-foreground">
             {candidates.length === 0
               ? "Keine Kandidaten vorhanden"
               : "Keine Kandidaten gefunden mit diesen Filtern"}
           </p>
           {candidates.length === 0 && (
             <Link href="/dashboard/candidates/new">
-              <Button className="mt-4 bg-amber-500 hover:bg-amber-400 text-black">
+              <Button className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground">
                 <Plus className="h-4 w-4 mr-2" />
                 Ersten Kandidaten anlegen
               </Button>
@@ -325,8 +323,8 @@ export function CandidatesList({
           )}
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="divide-y divide-border">
             {filteredCandidates.map((candidate) => {
               const skills = (candidate.skills as string[]) ?? [];
               const certificates = (candidate.certificates as { name: string }[]) ?? [];
@@ -336,179 +334,115 @@ export function CandidatesList({
               return (
                 <div
                   key={candidate.id}
-                  className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  className="p-3 lg:p-4 hover:bg-muted/30 transition-colors"
                 >
-                  <div className="flex items-start gap-4">
+                  {/* Mobile: Card layout */}
+                  <div className="flex items-start gap-3">
                     {/* Avatar */}
                     <Link
                       href={`/dashboard/candidates/${candidate.id}`}
                       className="flex-shrink-0"
                     >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-lg font-semibold text-amber-400">
+                      <div className="flex h-10 w-10 lg:h-12 lg:w-12 items-center justify-center rounded-full bg-primary text-sm lg:text-base font-semibold text-accent">
                         {candidate.firstName[0]}{candidate.lastName[0]}
                       </div>
                     </Link>
 
                     {/* Main Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <Link
-                              href={`/dashboard/candidates/${candidate.id}`}
-                              className="font-semibold text-lg text-slate-900 dark:text-white hover:text-amber-500"
-                            >
-                              {candidate.firstName} {candidate.lastName}
-                            </Link>
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                statusColors[candidate.status]
-                              }`}
-                            >
-                              {statusLabels[candidate.status]}
-                            </span>
-                          </div>
+                      {/* Name + Status row */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            href={`/dashboard/candidates/${candidate.id}`}
+                            className="font-semibold text-sm lg:text-base text-foreground hover:text-accent block truncate"
+                          >
+                            {candidate.firstName} {candidate.lastName}
+                          </Link>
                           {candidate.targetRole && (
-                            <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
                               {candidate.targetRole}
                             </p>
                           )}
                         </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Link href={`/dashboard/candidates/${candidate.id}/edit`}>
-                            <Button variant="outline" size="sm">
-                              Bearbeiten
-                            </Button>
-                          </Link>
-                          <DeleteCandidateButton id={candidate.id} name={`${candidate.firstName} ${candidate.lastName}`} />
-                        </div>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${
+                            statusColors[candidate.status]
+                          }`}
+                        >
+                          {statusLabels[candidate.status]}
+                        </span>
                       </div>
 
-                      {/* Contact & Key Info Row */}
-                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 text-sm text-slate-500">
+                      {/* Contact info - compact on mobile */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
                         {candidate.email && (
                           <a
                             href={`mailto:${candidate.email}`}
-                            className="flex items-center gap-1.5 hover:text-amber-500"
+                            className="flex items-center gap-1 hover:text-accent"
                           >
-                            <Mail className="h-4 w-4" />
-                            {candidate.email}
+                            <Mail className="h-3 w-3" />
+                            <span className="hidden sm:inline">{candidate.email}</span>
+                            <span className="sm:hidden">E-Mail</span>
                           </a>
                         )}
                         {candidate.phone && (
                           <a
                             href={`tel:${candidate.phone}`}
-                            className="flex items-center gap-1.5 hover:text-amber-500"
+                            className="flex items-center gap-1 hover:text-accent"
                           >
-                            <Phone className="h-4 w-4" />
-                            {candidate.phone}
+                            <Phone className="h-3 w-3" />
+                            <span className="hidden sm:inline">{candidate.phone}</span>
+                            <span className="sm:hidden">Anrufen</span>
                           </a>
                         )}
                         {(candidate.city || candidate.canton) && (
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4" />
-                            {candidate.postalCode && `${candidate.postalCode} `}
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
                             {candidate.city}
                             {candidate.canton && ` (${candidate.canton})`}
                           </span>
                         )}
                         {candidate.yearsOfExperience && (
-                          <span className="flex items-center gap-1.5">
-                            <Briefcase className="h-4 w-4" />
-                            {candidate.yearsOfExperience} Jahre Erfahrung
-                          </span>
-                        )}
-                        {education.length > 0 && (
-                          <span className="flex items-center gap-1.5">
-                            <GraduationCap className="h-4 w-4" />
-                            {education[0].degree}
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" />
+                            {candidate.yearsOfExperience}J
                           </span>
                         )}
                       </div>
 
                       {/* Skills Row */}
                       {skills.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          {skills.slice(0, 8).map((skill, i) => (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {skills.slice(0, 5).map((skill, i) => (
                             <span
                               key={i}
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                                 skillsFilter.includes(skill)
-                                  ? "bg-amber-500 text-black"
-                                  : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                  ? "bg-accent text-accent-foreground"
+                                  : "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
                               }`}
                             >
                               {skill}
                             </span>
                           ))}
-                          {skills.length > 8 && (
-                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800">
-                              +{skills.length - 8} mehr
+                          {skills.length > 5 && (
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                              +{skills.length - 5}
                             </span>
                           )}
                         </div>
                       )}
 
-                      {/* Certificates Row */}
-                      {certificates.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <Award className="h-4 w-4 text-violet-500" />
-                          {certificates.slice(0, 4).map((cert, i) => (
-                            <span
-                              key={i}
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                certificatesFilter.includes(cert.name)
-                                  ? "bg-violet-500 text-white"
-                                  : "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
-                              }`}
-                            >
-                              {cert.name}
-                            </span>
-                          ))}
-                          {certificates.length > 4 && (
-                            <span className="text-xs text-slate-500">
-                              +{certificates.length - 4} mehr
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Languages Row */}
-                      {languages.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-slate-500">
-                          <span className="font-medium">Sprachen:</span>
-                          {languages.map((lang, i) => (
-                            <span key={i}>
-                              {lang.language} ({lang.level})
-                              {i < languages.length - 1 && ","}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Salary Info */}
-                      {(candidate.expectedSalary || candidate.workloadPreference) && (
-                        <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-                          {candidate.expectedSalary && (
-                            <span>
-                              Gehaltsvorstellung:{" "}
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                CHF {candidate.expectedSalary.toLocaleString("de-CH")}
-                              </span>
-                            </span>
-                          )}
-                          {candidate.workloadPreference && (
-                            <span>
-                              Pensum:{" "}
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {candidate.workloadPreference}
-                              </span>
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      {/* Actions - full width on mobile */}
+                      <div className="flex items-center gap-2 mt-3 lg:mt-2">
+                        <Link href={`/dashboard/candidates/${candidate.id}/edit`}>
+                          <Button variant="outline" size="sm" className="h-7 text-xs">
+                            Bearbeiten
+                          </Button>
+                        </Link>
+                        <DeleteCandidateButton id={candidate.id} name={`${candidate.firstName} ${candidate.lastName}`} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -520,4 +454,3 @@ export function CandidatesList({
     </div>
   );
 }
-

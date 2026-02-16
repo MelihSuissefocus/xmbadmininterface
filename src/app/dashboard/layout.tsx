@@ -11,19 +11,18 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  
+
   if (!session) {
     redirect("/login");
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <div className="flex flex-col flex-1 lg:pl-64">
+      <div className="flex flex-col flex-1 lg:pl-[260px]">
         <Header />
-        <main className="flex-1 p-6 overflow-hidden">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6 overflow-hidden">{children}</main>
       </div>
     </div>
   );
 }
-

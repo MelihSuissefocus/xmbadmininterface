@@ -39,19 +39,19 @@ export function Header() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 dark:border-slate-800 dark:bg-slate-950">
-      <nav className="flex items-center gap-1 text-sm">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card/95 backdrop-blur-lg px-4 lg:px-6">
+      <nav className="flex items-center gap-1 text-sm min-w-0 overflow-hidden">
         {breadcrumbs.map((crumb, index) => (
-          <div key={index} className="flex items-center gap-1">
+          <div key={index} className="flex items-center gap-1 min-w-0">
             {index > 0 && (
-              <ChevronRight className="h-4 w-4 text-slate-400" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
             )}
             <span
-              className={
+              className={`truncate ${
                 crumb.isLast
-                  ? "font-medium text-slate-900 dark:text-white"
-                  : "text-slate-500 dark:text-slate-400"
-              }
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground hidden sm:inline"
+              }`}
             >
               {crumb.label}
             </span>
@@ -61,9 +61,9 @@ export function Header() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-slate-900 text-amber-400 text-sm font-semibold">
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full flex-shrink-0">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-primary text-accent text-xs font-semibold">
                 AD
               </AvatarFallback>
             </Avatar>
@@ -85,7 +85,7 @@ export function Header() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-red-600 focus:text-red-600 cursor-pointer"
+            className="text-destructive focus:text-destructive cursor-pointer"
             onClick={() => signOut({ callbackUrl: "/login" })}
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -96,4 +96,3 @@ export function Header() {
     </header>
   );
 }
-
