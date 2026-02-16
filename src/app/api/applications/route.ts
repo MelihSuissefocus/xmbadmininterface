@@ -8,6 +8,16 @@ import { v4 as uuidv4 } from "uuid";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_ORIGINS = [
+    "https://www.xmb-group.ch",
+    "https://xmb-group.ch",
+];
+
+function getCorsOrigin(request: Request): string {
+    const origin = request.headers.get("origin") ?? "";
+    return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+}
+
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
@@ -90,7 +100,7 @@ export async function POST(request: Request) {
         const response = NextResponse.json({ success: true, message: "Application received" });
 
         // Add CORS headers
-        response.headers.set("Access-Control-Allow-Origin", "*");
+        response.headers.set("Access-Control-Allow-Origin", getCorsOrigin(request));
         response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
         response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
 
@@ -102,9 +112,9 @@ export async function POST(request: Request) {
     }
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(request: Request) {
     const response = new NextResponse(null, { status: 204 });
-    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set("Access-Control-Allow-Origin", getCorsOrigin(request));
     response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
     return response;

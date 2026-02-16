@@ -1,14 +1,15 @@
-import { getCandidateList } from "@/actions/cv-generator";
-import { CvEditorShell } from "@/components/cv-generator/cv-editor-shell";
+import { OpenResume } from "@/components/open-resume/OpenResume";
 
 export const runtime = "nodejs";
 
+import { getAllCandidates } from "@/actions/candidates";
+
 export default async function CvGeneratorPage() {
-  const candidates = await getCandidateList();
+  const candidates = await getAllCandidates();
 
   return (
-    <div className="flex flex-col h-full -m-6">
-      <CvEditorShell candidates={candidates} />
+    <div className="h-full -m-6">
+      <OpenResume candidates={candidates} />
     </div>
   );
 }

@@ -1,0 +1,76 @@
+/* Font import removed to fix CssSyntaxError - relies on host fonts or manual link */
+
+/* Tailwind directives removed to avoid conflict with host app */
+
+@layer components {
+  .btn-primary {
+    background-image: linear-gradient(to right, var(--theme-purple), var(--theme-blue));
+    color: white;
+    display: inline-block;
+    border-radius: 9999px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.8;
+    outline: 2px solid var(--theme-purple);
+    outline-offset: 2px;
+  }
+
+  .text-primary {
+    background-image: linear-gradient(to right, var(--theme-purple), var(--theme-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+  }
+
+  .bg-primary {
+    background-image: linear-gradient(to right, var(--theme-purple), var(--theme-blue));
+    color: white;
+  }
+
+  .outline-theme-purple:hover {
+    opacity: 0.8;
+    outline: 2px solid var(--theme-purple);
+    outline-offset: 2px;
+    outline-color: var(--theme-purple);
+  }
+
+  .outline-theme-purple:focus-visible {
+    outline: 2px solid var(--theme-purple);
+    outline-offset: 2px;
+  }
+
+  .outline-theme-blue:hover {
+    opacity: 0.8;
+    outline: 2px solid var(--theme-blue);
+    outline-offset: 2px;
+    outline-color: var(--theme-blue);
+  }
+
+  .outline-theme-blue:focus-visible {
+    outline: 2px solid var(--theme-blue);
+    outline-offset: 2px;
+  }
+
+  .within-outline-theme-purple:focus-within {
+    outline: 2px solid var(--theme-purple);
+    outline-offset: 2px;
+  }
+
+  .within-outline-theme-purple:hover {
+    opacity: 0.8;
+    outline: 2px solid var(--theme-purple);
+  }
+}
+
+:root {
+  --theme-purple: #5d52d9;
+  --theme-blue: #4fc5eb;
+  /* Keep the below variable names in sync with CSS_VARIABLES in globals-css.ts */
+  --top-nav-bar-height: 3.5rem;
+  --resume-control-bar-height: 3rem;
+  --resume-padding: 1.5rem;
+}

@@ -6,6 +6,16 @@ import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_ORIGINS = [
+    "https://www.xmb-group.ch",
+    "https://xmb-group.ch",
+];
+
+function getCorsOrigin(request: Request): string {
+    const origin = request.headers.get("origin") ?? "";
+    return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+}
+
 function transformJobForApi(job: Job) {
     // Build requirements array from requirementsList, or from requiredSkills/niceToHaveSkills
     let requirements: { text: string; type: "must" | "nice" }[] = [];
@@ -67,7 +77,7 @@ export async function GET(request: Request) {
         const response = NextResponse.json(transformed);
 
         // Add CORS headers
-        response.headers.set("Access-Control-Allow-Origin", "*"); // Customize this for production
+        response.headers.set("Access-Control-Allow-Origin", getCorsOrigin(request));
         response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
         response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
 
@@ -78,9 +88,9 @@ export async function GET(request: Request) {
     }
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(request: Request) {
     const response = new NextResponse(null, { status: 204 });
-    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set("Access-Control-Allow-Origin", getCorsOrigin(request));
     response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
     response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
     return response;
