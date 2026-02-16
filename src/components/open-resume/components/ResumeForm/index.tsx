@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   useAppSelector,
   useSaveStateToLocalStorageOnChange,
@@ -16,7 +16,7 @@ import { CustomForm } from "@/components/open-resume/components/ResumeForm/Custo
 import { FlexboxSpacer } from "@/components/open-resume/components/FlexboxSpacer";
 import { cx } from "@/components/open-resume/lib/cx";
 
-const formTypeToComponent: { [type in ShowForm]: () => JSX.Element } = {
+const formTypeToComponent: { [type in ShowForm]: () => React.JSX.Element } = {
   workExperiences: WorkExperiencesForm,
   educations: EducationsForm,
   projects: ProjectsForm,

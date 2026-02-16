@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useSetDefaultScale } from "@/components/open-resume/components/Resume/hooks";
 import {
   MagnifyingGlassIcon,
@@ -18,7 +18,7 @@ const ResumeControlBar = ({
   scale: number;
   setScale: (scale: number) => void;
   documentSize: string;
-  document: JSX.Element;
+  document: React.JSX.Element;
   fileName: string;
 }) => {
   const { scaleOnResize, setScaleOnResize } = useSetDefaultScale({

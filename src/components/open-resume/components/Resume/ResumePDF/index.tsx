@@ -1,3 +1,4 @@
+import React from "react";
 import { Page, View, Document } from "@react-pdf/renderer";
 import { styles, spacing } from "@/components/open-resume/components/Resume/ResumePDF/styles";
 import { ResumePDFProfile } from "@/components/open-resume/components/Resume/ResumePDF/ResumePDFProfile";
@@ -51,7 +52,7 @@ export const ResumePDF = ({
 
   const showFormsOrder = formsOrder.filter((form) => formToShow[form]);
 
-  const formTypeToComponent: { [type in ShowForm]: () => JSX.Element } = {
+  const formTypeToComponent: { [type in ShowForm]: () => React.JSX.Element } = {
     workExperiences: () => (
       <ResumePDFWorkExperience
         heading={formToHeading["workExperiences"]}
