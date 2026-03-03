@@ -4,7 +4,7 @@ import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { candidates } from "@/db/schema";
+import { candidates, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { renderToPdfBuffer } from "@/lib/cv/renderers/e3Inspired/renderToPdfBuffer";
 import { normalizeCandidateToCVData } from "@/lib/cv/renderers/e3Inspired/normalizeCandidateToCVData";
@@ -21,6 +21,9 @@ const RequestBody = z.object({
   variant: z.enum(["customer", "internal"]),
 });
 
+/** Roles allowed to generate CVs (all roles may read/generate). */
+const ALLOWED_ROLES = new Set(["admin", "recruiter", "viewer"]);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/cv-generator
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,8 +31,23 @@ const RequestBody = z.object({
 export async function POST(request: Request) {
   // ── Auth ─────────────────────────────────────────────────
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // ── Role check ──────────────────────────────────────────
+  const [user] = await db
+    .select({ role: users.role, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (!user || !user.isActive) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (user.role && !ALLOWED_ROLES.has(user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // ── Parse & validate body ────────────────────────────────
