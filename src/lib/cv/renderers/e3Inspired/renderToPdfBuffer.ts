@@ -11,6 +11,6 @@ import type { CVData } from "./types";
  */
 export async function renderToPdfBuffer(data: CVData): Promise<Buffer> {
   const element = React.createElement(CvPdf, { data });
-  const buffer = await renderToBuffer(element);
+  const buffer = await renderToBuffer(element as any);
   return Buffer.from(buffer);
 }

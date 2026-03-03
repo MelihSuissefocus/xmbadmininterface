@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   } catch (err) {
     const message =
       err instanceof z.ZodError
-        ? err.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join("; ")
+        ? err.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join("; ")
         : "Invalid request body";
     return NextResponse.json({ error: message }, { status: 400 });
   }

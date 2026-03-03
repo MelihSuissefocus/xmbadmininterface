@@ -1,0 +1,73 @@
+{
+  "firstName": "Max",
+  "lastName": "Müller",
+  "email": "max@example.com",
+  "phone": "+41 79 123 45 67",
+  "linkedinUrl": "https://linkedin.com/in/maxmueller",
+  "targetRole": "Senior Software Engineer",
+  "skills": ["React", "TypeScript", "Node.js", "PostgreSQL"],
+  "languages": [
+    { "language": "Deutsch", "level": "Muttersprache" },
+    { "language": "Englisch", "level": "C1" },
+    { "language": "Französisch", "level": "B2" }
+  ],
+  "certificates": [
+    { "name": "AWS Solutions Architect", "issuer": "Amazon", "date": "2023-06-15" },
+    { "name": "Scrum Master", "issuer": "", "date": "" }
+  ],
+  "education": [
+    {
+      "degree": "BSc Informatik",
+      "institution": "ETH Zürich",
+      "startMonth": "09",
+      "startYear": "2012",
+      "endMonth": "06",
+      "endYear": "2016"
+    },
+    {
+      "degree": "MSc Computer Science",
+      "institution": "EPFL",
+      "startMonth": "09",
+      "startYear": "2016",
+      "endMonth": "07",
+      "endYear": "2018"
+    }
+  ],
+  "experience": [
+    {
+      "role": "Junior Developer",
+      "company": "StartupCo",
+      "startMonth": "08",
+      "startYear": "2018",
+      "endMonth": "12",
+      "endYear": "2019",
+      "current": false,
+      "description": "Backend-Entwicklung mit Node.js\nAPI-Design und Implementierung"
+    },
+    {
+      "role": "Software Engineer",
+      "company": "MediumCorp",
+      "startMonth": "01",
+      "startYear": "2020",
+      "endMonth": "06",
+      "endYear": "2022",
+      "current": false,
+      "description": "Full-Stack Entwicklung\n\nReact Frontend\nMicroservices Architektur"
+    },
+    {
+      "role": "Senior Engineer",
+      "company": "BigTech AG",
+      "startMonth": "07",
+      "startYear": "2022",
+      "endMonth": "",
+      "endYear": "",
+      "current": true,
+      "description": "Teamlead für 5-köpfiges Entwicklerteam"
+    }
+  ],
+  "highlights": [
+    "10+ Jahre Erfahrung in der Softwareentwicklung",
+    "Expertise in Cloud-Architekturen",
+    ""
+  ]
+}
