@@ -166,7 +166,7 @@ describe("POST /api/cv-generator", () => {
 
   it("returns 403 when user is inactive", async () => {
     mockAuth({ user: { id: "u1" } });
-    mockSelectChain([[{ role: "admin", isActive: 0 }]]);
+    mockSelectChain([[{ role: "admin", isActive: false }]]);
 
     const res = await POST(makeRequest({ candidateId: CANDIDATE_ID, variant: "customer" }));
     expect(res.status).toBe(403);
@@ -175,7 +175,7 @@ describe("POST /api/cv-generator", () => {
   it("returns 404 when candidate is not found", async () => {
     mockAuth({ user: { id: "u1" } });
     // 1st select → user check, 2nd select → candidate lookup
-    mockSelectChain([[{ role: "admin", isActive: 1 }], []]);
+    mockSelectChain([[{ role: "admin", isActive: true }], []]);
 
     const res = await POST(makeRequest({ candidateId: CANDIDATE_ID, variant: "customer" }));
     expect(res.status).toBe(404);
@@ -183,7 +183,7 @@ describe("POST /api/cv-generator", () => {
 
   it("returns 200 with pdfUrl for valid request", async () => {
     mockAuth({ user: { id: "u1" } });
-    mockSelectChain([[{ role: "admin", isActive: 1 }], [makeCandidate()]]);
+    mockSelectChain([[{ role: "admin", isActive: true }], [makeCandidate()]]);
 
     const res = await POST(makeRequest({ candidateId: CANDIDATE_ID, variant: "customer" }));
     expect(res.status).toBe(200);
@@ -198,7 +198,7 @@ describe("POST /api/cv-generator", () => {
 
   it("returns 200 for internal variant", async () => {
     mockAuth({ user: { id: "u1" } });
-    mockSelectChain([[{ role: "recruiter", isActive: 1 }], [makeCandidate()]]);
+    mockSelectChain([[{ role: "recruiter", isActive: true }], [makeCandidate()]]);
 
     const res = await POST(makeRequest({ candidateId: CANDIDATE_ID, variant: "internal" }));
     expect(res.status).toBe(200);

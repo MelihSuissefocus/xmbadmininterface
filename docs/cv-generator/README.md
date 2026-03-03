@@ -20,6 +20,8 @@ POST /api/cv-generator
 
 | File | Purpose |
 |------|---------|
+| `src/app/dashboard/cv-generator/page.tsx` | Dashboard page (server component) |
+| `src/app/dashboard/cv-generator/cv-generator-client.tsx` | Interactive UI (client component) |
 | `src/app/api/cv-generator/route.ts` | API route handler |
 | `src/lib/cv/renderers/e3Inspired/CvPdf.tsx` | React-PDF document component |
 | `src/lib/cv/renderers/e3Inspired/renderToPdfBuffer.ts` | Server-side render to Buffer |
