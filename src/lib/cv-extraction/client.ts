@@ -53,50 +53,70 @@ export async function extractCvFromPdf(
   const timeout = setTimeout(() => controller.abort(), CV_API_TIMEOUT_MS);
 
   try {
+    console.log(`[CV-API] POST ${endpoint} | file=${fileName} | size=${pdfBuffer.length} bytes`);
+
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "X-API-Key": key,
+        "Xmb-pdftojsonapi": key,
         "accept": "application/json",
       },
       body: formData,
       signal: controller.signal,
     });
 
+    console.log(`[CV-API] Response: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error(`[CV-API] Error body: ${body}`);
+
       if (response.status === 403) {
         throw new CvExtractionError(
-          "Zugriff verweigert. Der API-Schlüssel ist ungültig oder abgelaufen.",
+          `Zugriff verweigert (403). API-Key ungültig. Response: ${body}`,
           "AUTH_FAILED",
           403
         );
       }
       if (response.status === 422) {
         throw new CvExtractionError(
-          "Die hochgeladene Datei konnte nicht verarbeitet werden. Bitte stelle sicher, dass es sich um ein gültiges PDF handelt.",
+          `Datei konnte nicht verarbeitet werden (422). Response: ${body}`,
           "INVALID_PDF",
           422
         );
       }
+      if (response.status === 502) {
+        throw new CvExtractionError(
+          `Mac Mini Server nicht erreichbar (502 Bad Gateway). Ist der Python-Server auf localhost:8000 gestartet?`,
+          "API_ERROR",
+          502
+        );
+      }
       throw new CvExtractionError(
-        `Die CV-Analyse API hat mit Status ${response.status} geantwortet.`,
+        `CV-API Status ${response.status}: ${body}`,
         "API_ERROR",
         response.status
       );
     }
 
     const data: MacMiniCvResponse = await response.json();
+    console.log(`[CV-API] Erfolg: ${data.vorname} ${data.nachname}, ${data.erfahrungen?.length ?? 0} Erfahrungen`);
     return data;
   } catch (error) {
-    if (error instanceof CvExtractionError) throw error;
+    if (error instanceof CvExtractionError) {
+      console.error(`[CV-API] CvExtractionError: ${error.code} - ${error.message}`);
+      throw error;
+    }
 
     if (error instanceof DOMException && error.name === "AbortError") {
+      console.error(`[CV-API] Timeout nach ${CV_API_TIMEOUT_MS}ms`);
       throw new CvExtractionError(
         "Die CV-Analyse hat zu lange gedauert (Timeout nach 60 Sekunden). Das lokale LLM ist möglicherweise überlastet.",
         "TIMEOUT"
       );
     }
 
+    console.error(`[CV-API] Unerwarteter Fehler:`, error);
     throw new CvExtractionError(
       `Verbindung zur CV-Analyse API fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`,
       "API_ERROR"

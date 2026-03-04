@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         // Add CORS headers
         response.headers.set("Access-Control-Allow-Origin", getCorsOrigin(request));
         response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-        response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+        response.headers.set("Access-Control-Allow-Headers", "Content-Type, Xmb-pdftojsonapi");
 
         return response;
     } catch (error) {
@@ -92,6 +92,6 @@ export async function OPTIONS(request: Request) {
     const response = new NextResponse(null, { status: 204 });
     response.headers.set("Access-Control-Allow-Origin", getCorsOrigin(request));
     response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Xmb-pdftojsonapi");
     return response;
 }

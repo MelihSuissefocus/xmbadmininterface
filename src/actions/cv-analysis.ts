@@ -13,9 +13,10 @@ import { checkRateLimit, checkDailyQuota, checkTenantQuota, CV_ANALYSIS_RATE_LIM
 import { computeFileHash, getCachedResult, setCachedResult, DEDUPE_TTL_MS } from "@/lib/dedupe";
 import { cvLogger } from "@/lib/logger";
 import { metrics, CV_METRICS } from "@/lib/metrics";
-import { CVError, wrapError, isCVError } from "@/lib/cv-errors";
+import { CVError, wrapError, isCVError, type CVErrorCode } from "@/lib/cv-errors";
 import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
 import { extractWithLocalApi } from "@/lib/cv-extraction/extract-with-local-api";
+import { CvExtractionError } from "@/lib/cv-extraction/client";
 import { getExtractionConfigForJob } from "./extraction-config";
 
 const OVERALL_ANALYSIS_TIMEOUT_MS = 60000;
@@ -397,7 +398,31 @@ async function processCvAnalysisJob(
     cvLogger.info("CV analysis completed", { jobId, durationMs: latencyMs, pageCount, autofillCount, reviewCount, action: "processCvAnalysisJob" });
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    const cvError = isCVError(error) ? error : wrapError(error);
+
+    // Log the real error for debugging
+    cvLogger.error("CV analysis error details", {
+      jobId,
+      errorName: error instanceof Error ? error.name : "Unknown",
+      errorMessage: error instanceof Error ? error.message : String(error),
+      action: "processCvAnalysisJob",
+    });
+
+    // Map CvExtractionError to CVError with meaningful messages
+    let cvError: CVError;
+    if (isCVError(error)) {
+      cvError = error;
+    } else if (error instanceof CvExtractionError) {
+      const codeMap: Record<string, CVErrorCode> = {
+        AUTH_FAILED: "AZURE_AUTH_FAILED",
+        TIMEOUT: "ANALYSIS_TIMEOUT",
+        CONFIG_ERROR: "INTERNAL_ERROR",
+        INVALID_PDF: "FILE_INVALID_TYPE",
+        API_ERROR: "ANALYSIS_FAILED",
+      };
+      cvError = new CVError(codeMap[error.code] ?? "ANALYSIS_FAILED");
+    } else {
+      cvError = wrapError(error);
+    }
 
     if (cvError.code === "ANALYSIS_TIMEOUT") {
       isTimeout = true;
