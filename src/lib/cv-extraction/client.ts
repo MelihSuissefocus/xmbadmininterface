@@ -46,7 +46,7 @@ export async function extractCvFromPdf(
   const endpoint = `${baseUrl}extract-cv/`;
 
   const formData = new FormData();
-  const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+  const blob = new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" });
   formData.append("file", blob, fileName);
 
   const controller = new AbortController();
