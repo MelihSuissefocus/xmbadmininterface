@@ -19,7 +19,7 @@ export class CvExtractionError extends Error {
 }
 
 function getConfig() {
-  const url = process.env.CV_API_URL;
+  let url = process.env.CV_API_URL;
   const key = process.env.CV_API_KEY;
 
   if (!url || !key) {
@@ -27,6 +27,11 @@ function getConfig() {
       "CV_API_URL oder CV_API_KEY ist nicht konfiguriert.",
       "CONFIG_ERROR"
     );
+  }
+
+  // Ensure protocol is present
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
   }
 
   return { url, key };
