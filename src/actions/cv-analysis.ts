@@ -15,7 +15,7 @@ import { cvLogger } from "@/lib/logger";
 import { metrics, CV_METRICS } from "@/lib/metrics";
 import { CVError, wrapError, isCVError, type CVErrorCode } from "@/lib/cv-errors";
 import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
-import { extractWithLocalApi } from "@/lib/cv-extraction/extract-with-local-api";
+import { submitToLocalApi } from "@/lib/cv-extraction/extract-with-local-api";
 import { CvExtractionError } from "@/lib/cv-extraction/client";
 import { getExtractionConfigForJob } from "./extraction-config";
 
@@ -278,28 +278,25 @@ async function processCvAnalysisJob(
     let result: CandidateAutoFillDraftV2;
 
     if (useLocalApi) {
-      // --- Local Mac Mini LLM API path ---
-      cvLogger.info("Using local Mac Mini API for extraction", { jobId, action: "processCvAnalysisJob" });
+      // --- Local Mac Mini LLM API path (async submit) ---
+      cvLogger.info("Using local Mac Mini API for extraction (async)", { jobId, action: "processCvAnalysisJob" });
 
-      const localResult = await Promise.race([
-        extractWithLocalApi(
-          fileBytes,
-          fileName,
-          fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
-          fileSize
-        ),
-        new Promise<never>((_, reject) => {
-          timeoutController.signal.addEventListener("abort", () => {
-            reject(new CVError("ANALYSIS_TIMEOUT"));
-          });
-        }),
-      ]);
+      const { externalJobId } = await submitToLocalApi(fileBytes, fileName);
 
-      result = localResult;
-      autofillCount = result.filledFields?.length ?? 0;
-      reviewCount = result.ambiguousFields?.length ?? 0;
+      await db
+        .update(cvAnalysisJobs)
+        .set({ externalJobId, updatedAt: new Date() })
+        .where(eq(cvAnalysisJobs.id, jobId));
 
-      cvLogger.info("Local API extraction completed", { jobId, action: "processCvAnalysisJob" });
+      cvLogger.info("PDF submitted to Mac Mini, awaiting webhook callback", {
+        jobId,
+        externalJobId,
+        action: "processCvAnalysisJob",
+      });
+
+      // Job stays in "processing" — completion comes via /api/cv-callback webhook
+      clearTimeout(overallTimeout);
+      return;
     } else {
       // --- Azure DI + Azure OpenAI fallback path ---
       const analysisPromise = Promise.race([

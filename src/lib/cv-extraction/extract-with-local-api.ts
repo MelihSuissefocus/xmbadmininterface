@@ -1,29 +1,14 @@
 /**
- * CV extraction using the local Mac Mini LLM API.
- * Returns the same CandidateAutoFillDraftV2 format as the Azure DI + LLM pipeline.
+ * CV extraction using the local Mac Mini LLM API (async submit).
+ * Submits the PDF for background processing; result arrives via webhook callback.
  */
 
-import { extractCvFromPdf } from "./client";
-import { mapMacMiniResponseToDraftV2 } from "./mapper";
-import type { CandidateAutoFillDraftV2 } from "@/lib/azure-di/types";
+import { submitCvForExtraction } from "./client";
 
-export async function extractWithLocalApi(
+export async function submitToLocalApi(
   fileBytes: Buffer,
-  fileName: string,
-  fileType: "pdf" | "png" | "jpg" | "jpeg" | "docx",
-  fileSize: number
-): Promise<CandidateAutoFillDraftV2> {
-  const startTime = Date.now();
-
-  const macMiniResponse = await extractCvFromPdf(fileBytes, fileName);
-
-  const processingTimeMs = Date.now() - startTime;
-
-  return mapMacMiniResponseToDraftV2(
-    macMiniResponse,
-    fileName,
-    fileType,
-    fileSize,
-    processingTimeMs
-  );
+  fileName: string
+): Promise<{ externalJobId: string }> {
+  const { jobId } = await submitCvForExtraction(fileBytes, fileName);
+  return { externalJobId: jobId };
 }

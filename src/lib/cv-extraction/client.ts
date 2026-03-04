@@ -1,9 +1,9 @@
 /**
  * Mac Mini LLM CV Extraction Client
- * Sends PDF files to local 14B model via ngrok tunnel for structured extraction
+ * Sends PDF files to local 14B model via ngrok tunnel for async extraction
  */
 
-import type { MacMiniCvResponse } from "./types";
+import type { MacMiniSubmitResponse } from "./types";
 
 const CV_API_TIMEOUT_MS = 60_000;
 
@@ -38,12 +38,13 @@ function getConfig() {
 }
 
 /**
- * Sends a PDF buffer to the Mac Mini LLM API and returns structured CV data.
+ * Submits a PDF buffer to the Mac Mini LLM API for async extraction.
+ * Returns the external job_id for tracking via webhook callback.
  */
-export async function extractCvFromPdf(
+export async function submitCvForExtraction(
   pdfBuffer: Buffer,
   fileName: string
-): Promise<MacMiniCvResponse> {
+): Promise<{ jobId: string }> {
   const { url, key } = getConfig();
 
   // Clean URL joining: ensure base URL ends with /, endpoint starts without /
@@ -104,9 +105,9 @@ export async function extractCvFromPdf(
       );
     }
 
-    const data: MacMiniCvResponse = await response.json();
-    console.log(`[CV-API] Erfolg: ${data.vorname} ${data.nachname}, ${data.erfahrungen?.length ?? 0} Erfahrungen`);
-    return data;
+    const data: MacMiniSubmitResponse = await response.json();
+    console.log(`[CV-API] Job submitted: job_id=${data.job_id}, status=${data.status}`);
+    return { jobId: data.job_id };
   } catch (error) {
     if (error instanceof CvExtractionError) {
       console.error(`[CV-API] CvExtractionError: ${error.code} - ${error.message}`);

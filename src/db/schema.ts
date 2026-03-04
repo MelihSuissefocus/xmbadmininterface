@@ -98,6 +98,7 @@ export const cvAnalysisJobs = pgTable("cv_analysis_jobs", {
   fileType: text("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
   fileHash: text("file_hash"),
+  externalJobId: text("external_job_id"),
   result: jsonb("result"),
   error: text("error"),
   errorCode: text("error_code"),

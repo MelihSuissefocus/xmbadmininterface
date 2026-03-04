@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
-import { extractCvFromPdf, CvExtractionError } from "@/lib/cv-extraction/client";
-import { mapMacMiniResponseToFilledFields } from "@/lib/cv-extraction/mapper";
-import type { CandidateAutoFillDraft } from "@/lib/cv-autofill/types";
+import { submitCvForExtraction, CvExtractionError } from "@/lib/cv-extraction/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
-  const startTime = Date.now();
-
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -32,36 +28,12 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const pdfBuffer = Buffer.from(arrayBuffer);
 
-    const apiResponse = await extractCvFromPdf(pdfBuffer, file.name);
-
-    const filledFields = mapMacMiniResponseToFilledFields(apiResponse);
-
-    const draft: CandidateAutoFillDraft = {
-      filledFields,
-      ambiguousFields: [],
-      unmappedItems: apiResponse.unklare_inhalte
-        ? [
-            {
-              extractedLabel: "Unklare Inhalte",
-              extractedValue: apiResponse.unklare_inhalte,
-              suggestedTargets: [],
-              source: { text: "LLM-Analyse" },
-            },
-          ]
-        : [],
-      metadata: {
-        fileName: file.name,
-        fileType: "pdf",
-        fileSize: file.size,
-        extractionMethod: "text",
-        processingTimeMs: Date.now() - startTime,
-        timestamp: new Date().toISOString(),
-      },
-    };
+    const { jobId } = await submitCvForExtraction(pdfBuffer, file.name);
 
     return NextResponse.json({
-      draft,
-      raw: apiResponse,
+      status: "processing",
+      job_id: jobId,
+      message: "PDF submitted for async extraction. Result will arrive via webhook callback.",
     });
   } catch (error) {
     console.error("CV LLM extraction error:", error);

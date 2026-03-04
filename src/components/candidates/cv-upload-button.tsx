@@ -16,7 +16,7 @@ export interface CVUploadButtonProps {
 type UploadState = "idle" | "uploading" | "processing" | "completed" | "error";
 
 const POLL_INTERVAL_MS = 1500;
-const MAX_POLL_ATTEMPTS = 80;
+const MAX_POLL_ATTEMPTS = 240;
 
 export function CVUploadButton({
   onUploadComplete,
@@ -113,7 +113,7 @@ export function CVUploadButton({
       }
 
       jobIdRef.current = jobResult.data.jobId;
-      setProgress("CV wird analysiert...");
+      setProgress("CV wird analysiert (dies kann einige Minuten dauern)...");
       pollForResult();
     } catch {
       setState("error");

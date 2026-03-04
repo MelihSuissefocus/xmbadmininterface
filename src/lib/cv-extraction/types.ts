@@ -18,6 +18,11 @@ export interface MacMiniCvAusbildung {
   institution: string;
 }
 
+export interface MacMiniSubmitResponse {
+  status: string;
+  job_id: string;
+}
+
 export interface MacMiniCvResponse {
   vorname: string;
   nachname: string;
