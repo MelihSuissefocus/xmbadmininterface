@@ -120,7 +120,11 @@ export function CvGeneratorClient({ candidates }: CvGeneratorClientProps) {
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error ?? `Fehler ${res.status}`);
+        let errorMessage = json.error ?? `Fehler ${res.status}`;
+        if (json.message) {
+          errorMessage += `: ${json.message}`;
+        }
+        setError(errorMessage);
         return;
       }
 
@@ -230,11 +234,10 @@ export function CvGeneratorClient({ candidates }: CvGeneratorClientProps) {
                 setVariant("customer");
                 setResult(null);
               }}
-              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-                variant === "customer"
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${variant === "customer"
                   ? "bg-primary text-primary-foreground"
                   : "bg-card text-muted-foreground hover:bg-muted/60"
-              }`}
+                }`}
             >
               Kunden-CV
             </button>
@@ -243,11 +246,10 @@ export function CvGeneratorClient({ candidates }: CvGeneratorClientProps) {
                 setVariant("internal");
                 setResult(null);
               }}
-              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-                variant === "internal"
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${variant === "internal"
                   ? "bg-primary text-primary-foreground"
                   : "bg-card text-muted-foreground hover:bg-muted/60"
-              }`}
+                }`}
             >
               Intern
             </button>
