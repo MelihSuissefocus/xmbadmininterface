@@ -266,19 +266,11 @@ async function processCvAnalysisJob(
 
   cvLogger.info("Processing CV analysis", { jobId, action: "processCvAnalysisJob" });
 
-  const timeoutController = new AbortController();
-  const overallTimeout = setTimeout(() => {
-    isTimeout = true;
-    timeoutController.abort();
-  }, OVERALL_ANALYSIS_TIMEOUT_MS);
+  const useLocalApi = !!process.env.CV_API_URL;
 
-  try {
-    const useLocalApi = !!process.env.CV_API_URL;
-
-    let result: CandidateAutoFillDraftV2;
-
-    if (useLocalApi) {
-      // --- Local Mac Mini LLM API path (async submit) ---
+  // --- Local Mac Mini LLM API path (async submit, no timeout needed) ---
+  if (useLocalApi) {
+    try {
       cvLogger.info("Using local Mac Mini API for extraction (async)", { jobId, action: "processCvAnalysisJob" });
 
       const { externalJobId } = await submitToLocalApi(fileBytes, fileName);
@@ -295,73 +287,106 @@ async function processCvAnalysisJob(
       });
 
       // Job stays in "processing" — completion comes via /api/cv-callback webhook
-      clearTimeout(overallTimeout);
       return;
-    } else {
-      // --- Azure DI + Azure OpenAI fallback path ---
-      const analysisPromise = Promise.race([
-        (async () => {
-          const [docRep, extractionConfig] = await Promise.all([
-            analyzeDocument(new Uint8Array(fileBytes), mimeType),
-            getExtractionConfigForJob(),
-          ]);
-          return { docRep, extractionConfig };
-        })(),
-        new Promise<never>((_, reject) => {
-          timeoutController.signal.addEventListener("abort", () => {
-            reject(new CVError("ANALYSIS_TIMEOUT"));
-          });
-        }),
-      ]);
-
-      const { docRep, extractionConfig } = await analysisPromise;
-
-      pageCount = docRep.pageCount;
-
-      if (docRep.pageCount > CV_AUTOFILL_CONFIG.MAX_PAGE_COUNT) {
-        throw new CVError("FILE_TOO_MANY_PAGES", { pages: docRep.pageCount });
-      }
-
+    } catch (error) {
       const latencyMs = Date.now() - startTime;
 
-      const mapperConfig: MapperConfig = {
-        synonyms: extractionConfig.synonyms,
-        dbSkills: extractionConfig.dbSkills,
-        skillAliases: new Map(Object.entries(extractionConfig.skillAliases)),
-      };
+      cvLogger.error("Failed to submit PDF to Mac Mini", {
+        jobId,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        action: "processCvAnalysisJob",
+      });
 
-      const fallbackResult = mapDocumentToCandidate(
-        docRep,
-        fileName,
-        fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
-        fileSize,
-        latencyMs,
-        mapperConfig
-      );
+      const cvError = error instanceof CvExtractionError
+        ? new CVError(error.code === "TIMEOUT" ? "ANALYSIS_TIMEOUT" : "ANALYSIS_FAILED")
+        : wrapError(error);
 
-      const llmPipelineResult = await extractWithLlm(
-        docRep,
-        fileName,
-        fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
-        fileSize,
-        latencyMs,
-        fallbackResult
-      );
+      await db
+        .update(cvAnalysisJobs)
+        .set({
+          status: "failed",
+          error: cvError.userMessage,
+          errorCode: cvError.code,
+          latencyMs,
+          updatedAt: new Date(),
+          completedAt: new Date(),
+        })
+        .where(eq(cvAnalysisJobs.id, jobId));
 
-      result = llmPipelineResult.draft;
-      autofillCount = result.filledFields?.length ?? 0;
-      reviewCount = result.ambiguousFields?.length ?? 0;
+      return;
+    }
+  }
 
-      if (llmPipelineResult.llmUsed) {
-        cvLogger.info("LLM extraction completed", {
-          jobId,
-          llmSuccess: llmPipelineResult.llmSuccess,
-          llmLatencyMs: llmPipelineResult.llmLatencyMs,
-          promptTokens: llmPipelineResult.promptTokens,
-          completionTokens: llmPipelineResult.completionTokens,
-          action: "processCvAnalysisJob",
+  // --- Azure DI + Azure OpenAI fallback path (with timeout) ---
+  const timeoutController = new AbortController();
+  const overallTimeout = setTimeout(() => {
+    isTimeout = true;
+    timeoutController.abort();
+  }, OVERALL_ANALYSIS_TIMEOUT_MS);
+
+  try {
+    const analysisPromise = Promise.race([
+      (async () => {
+        const [docRep, extractionConfig] = await Promise.all([
+          analyzeDocument(new Uint8Array(fileBytes), mimeType),
+          getExtractionConfigForJob(),
+        ]);
+        return { docRep, extractionConfig };
+      })(),
+      new Promise<never>((_, reject) => {
+        timeoutController.signal.addEventListener("abort", () => {
+          reject(new CVError("ANALYSIS_TIMEOUT"));
         });
-      }
+      }),
+    ]);
+
+    const { docRep, extractionConfig } = await analysisPromise;
+
+    pageCount = docRep.pageCount;
+
+    if (docRep.pageCount > CV_AUTOFILL_CONFIG.MAX_PAGE_COUNT) {
+      throw new CVError("FILE_TOO_MANY_PAGES", { pages: docRep.pageCount });
+    }
+
+    const azureLatencyMs = Date.now() - startTime;
+
+    const mapperConfig: MapperConfig = {
+      synonyms: extractionConfig.synonyms,
+      dbSkills: extractionConfig.dbSkills,
+      skillAliases: new Map(Object.entries(extractionConfig.skillAliases)),
+    };
+
+    const fallbackResult = mapDocumentToCandidate(
+      docRep,
+      fileName,
+      fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+      fileSize,
+      azureLatencyMs,
+      mapperConfig
+    );
+
+    const llmPipelineResult = await extractWithLlm(
+      docRep,
+      fileName,
+      fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+      fileSize,
+      azureLatencyMs,
+      fallbackResult
+    );
+
+    const result = llmPipelineResult.draft;
+    autofillCount = result.filledFields?.length ?? 0;
+    reviewCount = result.ambiguousFields?.length ?? 0;
+
+    if (llmPipelineResult.llmUsed) {
+      cvLogger.info("LLM extraction completed", {
+        jobId,
+        llmSuccess: llmPipelineResult.llmSuccess,
+        llmLatencyMs: llmPipelineResult.llmLatencyMs,
+        promptTokens: llmPipelineResult.promptTokens,
+        completionTokens: llmPipelineResult.completionTokens,
+        action: "processCvAnalysisJob",
+      });
     }
 
     const latencyMs = Date.now() - startTime;

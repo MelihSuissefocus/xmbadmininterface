@@ -5,7 +5,9 @@
 
 import type { MacMiniSubmitResponse } from "./types";
 
-const CV_API_TIMEOUT_MS = 60_000;
+// Timeout only for the HTTP submit (upload + immediate async response).
+// The actual LLM processing happens in the background on Mac Mini.
+const CV_API_TIMEOUT_MS = 15_000;
 
 export class CvExtractionError extends Error {
   constructor(
@@ -115,9 +117,9 @@ export async function submitCvForExtraction(
     }
 
     if (error instanceof DOMException && error.name === "AbortError") {
-      console.error(`[CV-API] Timeout nach ${CV_API_TIMEOUT_MS}ms`);
+      console.error(`[CV-API] Timeout nach ${CV_API_TIMEOUT_MS}ms — Mac Mini hat nicht rechtzeitig geantwortet`);
       throw new CvExtractionError(
-        "Die CV-Analyse hat zu lange gedauert (Timeout nach 60 Sekunden). Das lokale LLM ist möglicherweise überlastet.",
+        "Mac Mini hat nicht rechtzeitig geantwortet (Timeout). Ist der Server erreichbar?",
         "TIMEOUT"
       );
     }
