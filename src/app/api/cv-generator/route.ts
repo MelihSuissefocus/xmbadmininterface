@@ -93,28 +93,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // ── Persist to filesystem ───────────────────────────────
+    // ── Generate the dynamic URL to the CV ──────────────────
     const now = new Date();
-    const ts = now
-      .toISOString()
-      .replace(/[-:T]/g, "")
-      .replace(/\.\d+Z$/, "")
-      .slice(0, 15); // yyyyMMdd-HHmmss → "20260303120000" → we format below
-    const stamp = `${ts.slice(0, 8)}-${ts.slice(8)}`;
-    const fileName = `${stamp}-${body.variant}.pdf`;
-
-    const relDir = join("uploads", "cvs", body.candidateId);
-    const absDir = join(process.cwd(), "public", relDir);
-    await mkdir(absDir, { recursive: true });
-    await writeFile(join(absDir, fileName), pdfBuffer);
-
-    const pdfUrl = `/${relDir}/${fileName}`;
+    // Use timestamp as cache buster so the iframe preview always reloads immediately
+    const pdfUrl = `/api/cv-download/${body.candidateId}?variant=${body.variant}&t=${now.getTime()}`;
+    const cleanUrl = `/api/cv-download/${body.candidateId}?variant=${body.variant}`;
 
     // ── Update brandedCvUrl for customer variant ────────────
     if (body.variant === "customer") {
       await db
         .update(candidates)
-        .set({ brandedCvUrl: pdfUrl })
+        .set({ brandedCvUrl: cleanUrl })
         .where(eq(candidates.id, body.candidateId));
     }
 
