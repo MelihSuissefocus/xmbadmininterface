@@ -113,7 +113,7 @@ export function CVUploadButton({
       }
 
       jobIdRef.current = jobResult.data.jobId;
-      setProgress("CV wird mit Azure AI analysiert...");
+      setProgress("CV wird analysiert...");
       pollForResult();
     } catch {
       setState("error");

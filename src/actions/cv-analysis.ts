@@ -15,6 +15,7 @@ import { cvLogger } from "@/lib/logger";
 import { metrics, CV_METRICS } from "@/lib/metrics";
 import { CVError, wrapError, isCVError } from "@/lib/cv-errors";
 import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
+import { extractWithLocalApi } from "@/lib/cv-extraction/extract-with-local-api";
 import { getExtractionConfigForJob } from "./extraction-config";
 
 const OVERALL_ANALYSIS_TIMEOUT_MS = 60000;
@@ -271,69 +272,101 @@ async function processCvAnalysisJob(
   }, OVERALL_ANALYSIS_TIMEOUT_MS);
 
   try {
-    const analysisPromise = Promise.race([
-      (async () => {
-        const [docRep, extractionConfig] = await Promise.all([
-          analyzeDocument(new Uint8Array(fileBytes), mimeType),
-          getExtractionConfigForJob(),
-        ]);
-        return { docRep, extractionConfig };
-      })(),
-      new Promise<never>((_, reject) => {
-        timeoutController.signal.addEventListener("abort", () => {
-          reject(new CVError("ANALYSIS_TIMEOUT"));
+    const useLocalApi = !!process.env.CV_API_URL;
+
+    let result: CandidateAutoFillDraftV2;
+
+    if (useLocalApi) {
+      // --- Local Mac Mini LLM API path ---
+      cvLogger.info("Using local Mac Mini API for extraction", { jobId, action: "processCvAnalysisJob" });
+
+      const localResult = await Promise.race([
+        extractWithLocalApi(
+          fileBytes,
+          fileName,
+          fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+          fileSize
+        ),
+        new Promise<never>((_, reject) => {
+          timeoutController.signal.addEventListener("abort", () => {
+            reject(new CVError("ANALYSIS_TIMEOUT"));
+          });
+        }),
+      ]);
+
+      result = localResult;
+      autofillCount = result.filledFields?.length ?? 0;
+      reviewCount = result.ambiguousFields?.length ?? 0;
+
+      cvLogger.info("Local API extraction completed", { jobId, action: "processCvAnalysisJob" });
+    } else {
+      // --- Azure DI + Azure OpenAI fallback path ---
+      const analysisPromise = Promise.race([
+        (async () => {
+          const [docRep, extractionConfig] = await Promise.all([
+            analyzeDocument(new Uint8Array(fileBytes), mimeType),
+            getExtractionConfigForJob(),
+          ]);
+          return { docRep, extractionConfig };
+        })(),
+        new Promise<never>((_, reject) => {
+          timeoutController.signal.addEventListener("abort", () => {
+            reject(new CVError("ANALYSIS_TIMEOUT"));
+          });
+        }),
+      ]);
+
+      const { docRep, extractionConfig } = await analysisPromise;
+
+      pageCount = docRep.pageCount;
+
+      if (docRep.pageCount > CV_AUTOFILL_CONFIG.MAX_PAGE_COUNT) {
+        throw new CVError("FILE_TOO_MANY_PAGES", { pages: docRep.pageCount });
+      }
+
+      const latencyMs = Date.now() - startTime;
+
+      const mapperConfig: MapperConfig = {
+        synonyms: extractionConfig.synonyms,
+        dbSkills: extractionConfig.dbSkills,
+        skillAliases: new Map(Object.entries(extractionConfig.skillAliases)),
+      };
+
+      const fallbackResult = mapDocumentToCandidate(
+        docRep,
+        fileName,
+        fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+        fileSize,
+        latencyMs,
+        mapperConfig
+      );
+
+      const llmPipelineResult = await extractWithLlm(
+        docRep,
+        fileName,
+        fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+        fileSize,
+        latencyMs,
+        fallbackResult
+      );
+
+      result = llmPipelineResult.draft;
+      autofillCount = result.filledFields?.length ?? 0;
+      reviewCount = result.ambiguousFields?.length ?? 0;
+
+      if (llmPipelineResult.llmUsed) {
+        cvLogger.info("LLM extraction completed", {
+          jobId,
+          llmSuccess: llmPipelineResult.llmSuccess,
+          llmLatencyMs: llmPipelineResult.llmLatencyMs,
+          promptTokens: llmPipelineResult.promptTokens,
+          completionTokens: llmPipelineResult.completionTokens,
+          action: "processCvAnalysisJob",
         });
-      }),
-    ]);
-
-    const { docRep, extractionConfig } = await analysisPromise;
-
-    pageCount = docRep.pageCount;
-
-    if (docRep.pageCount > CV_AUTOFILL_CONFIG.MAX_PAGE_COUNT) {
-      throw new CVError("FILE_TOO_MANY_PAGES", { pages: docRep.pageCount });
+      }
     }
 
     const latencyMs = Date.now() - startTime;
-
-    const mapperConfig: MapperConfig = {
-      synonyms: extractionConfig.synonyms,
-      dbSkills: extractionConfig.dbSkills,
-      skillAliases: new Map(Object.entries(extractionConfig.skillAliases)),
-    };
-
-    const fallbackResult = mapDocumentToCandidate(
-      docRep,
-      fileName,
-      fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
-      fileSize,
-      latencyMs,
-      mapperConfig
-    );
-
-    const llmPipelineResult = await extractWithLlm(
-      docRep,
-      fileName,
-      fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
-      fileSize,
-      latencyMs,
-      fallbackResult
-    );
-
-    const result = llmPipelineResult.draft;
-    autofillCount = result.filledFields?.length ?? 0;
-    reviewCount = result.ambiguousFields?.length ?? 0;
-
-    if (llmPipelineResult.llmUsed) {
-      cvLogger.info("LLM extraction completed", {
-        jobId,
-        llmSuccess: llmPipelineResult.llmSuccess,
-        llmLatencyMs: llmPipelineResult.llmLatencyMs,
-        promptTokens: llmPipelineResult.promptTokens,
-        completionTokens: llmPipelineResult.completionTokens,
-        action: "processCvAnalysisJob",
-      });
-    }
 
     metrics.increment(CV_METRICS.ANALYSIS_SUCCESS);
     metrics.recordHistogram(CV_METRICS.ANALYSIS_LATENCY_MS, latencyMs);
