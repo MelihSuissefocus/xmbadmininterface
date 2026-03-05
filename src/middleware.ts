@@ -11,7 +11,8 @@ export default auth((req) => {
     nextUrl.pathname === "/reset-password" ||
     nextUrl.pathname.startsWith("/api/auth") ||
     nextUrl.pathname.startsWith("/api/jobs") ||
-    nextUrl.pathname.startsWith("/api/applications");
+    nextUrl.pathname.startsWith("/api/applications") ||
+    nextUrl.pathname.startsWith("/api/cv-callback");
 
   if (nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL(isLoggedIn ? "/dashboard" : "/login", nextUrl));
