@@ -1,5 +1,15 @@
 /**
- * Maps Mac Mini LLM CV extraction response to our internal candidate data structures
+ * Maps Mac Mini LLM CV extraction response to our internal candidate data structures.
+ *
+ * IMPROVED: Now uses the cv-parser module for proper normalization:
+ * - Date parsing from "zeitraum" fields
+ * - Skill normalization & deduplication
+ * - Language level parsing
+ * - Certificate parsing from weiterbildungen
+ * - Years of experience calculation
+ * - Subcontractor detection
+ * - Highlight extraction
+ * - Name cleaning (academic titles)
  */
 
 import type { MacMiniCvResponse } from "./types";
@@ -10,10 +20,12 @@ import type {
 } from "@/lib/cv-autofill/types";
 import type {
   CandidateAutoFillDraftV2,
-  ExtractedFieldWithEvidence,
-  FieldEvidence,
 } from "@/lib/azure-di/types";
-import { CV_EXTRACTION_VERSION } from "@/lib/azure-di/types";
+import {
+  mapMacMiniResponseToParsedCv,
+  validateParsedCv,
+  parsedCvToDraftV2,
+} from "@/lib/cv-parser";
 
 /**
  * Maps the Mac Mini API response to FilledField[] compatible with the existing
@@ -22,134 +34,122 @@ import { CV_EXTRACTION_VERSION } from "@/lib/azure-di/types";
 export function mapMacMiniResponseToFilledFields(
   data: MacMiniCvResponse
 ): FilledField[] {
+  const parsed = mapMacMiniResponseToParsedCv(data);
+  const { data: validated } = validateParsedCv(parsed);
   const fields: FilledField[] = [];
 
-  if (data.vorname) {
+  if (validated.first_name) {
     fields.push({
       targetField: "firstName",
-      extractedValue: data.vorname,
+      extractedValue: validated.first_name,
       confidence: "high",
-      source: { text: data.vorname },
+      source: { text: validated.first_name },
     });
   }
 
-  if (data.nachname) {
+  if (validated.last_name) {
     fields.push({
       targetField: "lastName",
-      extractedValue: data.nachname,
+      extractedValue: validated.last_name,
       confidence: "high",
-      source: { text: data.nachname },
+      source: { text: validated.last_name },
     });
   }
 
-  if (data.kernkompetenzen.length > 0) {
+  if (validated.skills.length > 0) {
     fields.push({
       targetField: "skills",
-      extractedValue: data.kernkompetenzen,
+      extractedValue: validated.skills,
       confidence: "high",
-      source: { text: `${data.kernkompetenzen.length} Kernkompetenzen` },
+      source: { text: `${validated.skills.length} Skills (normalisiert)` },
     });
   }
 
-  if (data.sprachen.length > 0) {
+  if (validated.languages.length > 0) {
     fields.push({
       targetField: "languages",
-      extractedValue: data.sprachen.map((lang) => ({
-        language: lang,
-        level: "",
-      })),
+      extractedValue: validated.languages,
       confidence: "medium",
-      source: { text: `${data.sprachen.length} Sprachen` },
+      source: { text: `${validated.languages.length} Sprachen` },
     });
   }
 
-  if (data.erfahrungen.length > 0) {
-    const experiences: ExperienceEntry[] = data.erfahrungen.map((erf) => {
-      const descriptionParts: string[] = [];
-      if (erf.aufgaben.length > 0) {
-        descriptionParts.push("Aufgaben: " + erf.aufgaben.join("; "));
-      }
-      if (erf.erfolge.length > 0) {
-        descriptionParts.push("Erfolge: " + erf.erfolge.join("; "));
-      }
-      if (erf.herausforderungen_und_learnings.length > 0) {
-        descriptionParts.push(
-          "Learnings: " + erf.herausforderungen_und_learnings.join("; ")
-        );
-      }
-      if (erf.tools.length > 0) {
-        descriptionParts.push("Tools: " + erf.tools.join(", "));
-      }
-
-      return {
-        role: erf.rolle,
-        company: erf.projekt_id || "",
-        description: descriptionParts.join("\n"),
-        startMonth: "",
-        startYear: "",
-        endMonth: "",
-        endYear: "",
-        current: false,
-      };
-    });
+  if (validated.work_experience.length > 0) {
+    const experiences: ExperienceEntry[] = validated.work_experience.map((exp) => ({
+      role: exp.role,
+      company: exp.company,
+      description: exp.description,
+      startMonth: exp.startMonth,
+      startYear: exp.startYear,
+      endMonth: exp.endMonth,
+      endYear: exp.endYear,
+      current: exp.current,
+    }));
 
     fields.push({
       targetField: "experience",
       extractedValue: experiences,
       confidence: "high",
-      source: { text: `${data.erfahrungen.length} Erfahrungen` },
+      source: { text: `${validated.work_experience.length} Berufsstationen` },
     });
   }
 
-  if (data.ausbildungen.length > 0) {
-    const education: EducationEntry[] = data.ausbildungen.map((aus) => ({
-      degree: aus.abschluss,
-      institution: aus.institution,
-      startMonth: "",
-      startYear: "",
-      endMonth: "",
-      endYear: "",
+  if (validated.education.length > 0) {
+    const education: EducationEntry[] = validated.education.map((edu) => ({
+      degree: edu.degree,
+      institution: edu.institution,
+      startMonth: edu.startMonth,
+      startYear: edu.startYear,
+      endMonth: edu.endMonth,
+      endYear: edu.endYear,
     }));
 
     fields.push({
       targetField: "education",
       extractedValue: education,
       confidence: "high",
-      source: { text: `${data.ausbildungen.length} Ausbildungen` },
+      source: { text: `${validated.education.length} Ausbildungen` },
     });
   }
 
-  if (data.weiterbildungen.length > 0) {
+  if (validated.certifications.length > 0) {
     fields.push({
       targetField: "certificates",
-      extractedValue: data.weiterbildungen.map((wb) => ({
-        name: wb,
-        issuer: "",
-        date: "",
+      extractedValue: validated.certifications.map((c) => ({
+        name: c.name,
+        issuer: c.issuer,
+        date: c.year,
       })),
       confidence: "medium",
-      source: { text: `${data.weiterbildungen.length} Weiterbildungen` },
+      source: { text: `${validated.certifications.length} Zertifikate` },
     });
   }
 
-  if (data.erfahrungen.length > 0) {
-    const allTools = data.erfahrungen.flatMap((e) => e.tools);
-    const uniqueTools = [...new Set(allTools)];
-    if (uniqueTools.length > 0) {
-      const existingSkills = fields.find((f) => f.targetField === "skills");
-      if (existingSkills && Array.isArray(existingSkills.extractedValue)) {
-        const merged = [
-          ...new Set([
-            ...(existingSkills.extractedValue as string[]),
-            ...uniqueTools,
-          ]),
-        ];
-        existingSkills.extractedValue = merged;
-        existingSkills.source = {
-          text: `${merged.length} Skills (Kompetenzen + Tools)`,
-        };
-      }
-    }
+  if (validated.target_position) {
+    fields.push({
+      targetField: "targetRole",
+      extractedValue: validated.target_position,
+      confidence: "medium",
+      source: { text: validated.target_position },
+    });
+  }
+
+  if (validated.years_experience !== null && validated.years_experience > 0) {
+    fields.push({
+      targetField: "yearsOfExperience",
+      extractedValue: validated.years_experience,
+      confidence: "medium",
+      source: { text: `${validated.years_experience} Jahre (berechnet)` },
+    });
+  }
+
+  if (validated.highlights.length > 0) {
+    fields.push({
+      targetField: "highlights",
+      extractedValue: validated.highlights,
+      confidence: "medium",
+      source: { text: `${validated.highlights.length} Highlights` },
+    });
   }
 
   return fields;
@@ -158,7 +158,8 @@ export function mapMacMiniResponseToFilledFields(
 /**
  * Maps Mac Mini LLM response → CandidateAutoFillDraftV2
  * Used by the local API extraction path in cv-analysis.
- * No evidence data available from local API, so we use a stub.
+ *
+ * IMPROVED: Now uses the cv-parser pipeline for complete normalization.
  */
 export function mapMacMiniResponseToDraftV2(
   data: MacMiniCvResponse,
@@ -167,139 +168,17 @@ export function mapMacMiniResponseToDraftV2(
   fileSize: number,
   processingTimeMs: number
 ): CandidateAutoFillDraftV2 {
-  const stubEvidence: FieldEvidence = {
-    page: 1,
-    exactText: "",
-    confidence: 0,
-  };
+  // 1. Map to canonical parsed format
+  const parsed = mapMacMiniResponseToParsedCv(data);
 
-  const filledFields: ExtractedFieldWithEvidence[] = [];
+  // 2. Validate and sanitize
+  const { data: validated } = validateParsedCv(parsed);
 
-  if (data.vorname) {
-    filledFields.push({
-      targetField: "firstName",
-      extractedValue: data.vorname,
-      confidence: "medium",
-      evidence: { ...stubEvidence, exactText: data.vorname },
-    });
-  }
-
-  if (data.nachname) {
-    filledFields.push({
-      targetField: "lastName",
-      extractedValue: data.nachname,
-      confidence: "medium",
-      evidence: { ...stubEvidence, exactText: data.nachname },
-    });
-  }
-
-  if (data.kernkompetenzen.length > 0) {
-    // Merge tools from experiences into skills
-    const allTools = data.erfahrungen.flatMap((e) => e.tools);
-    const merged = [...new Set([...data.kernkompetenzen, ...allTools])];
-
-    filledFields.push({
-      targetField: "skills",
-      extractedValue: merged,
-      confidence: "medium",
-      evidence: { ...stubEvidence, exactText: `${merged.length} Skills` },
-    });
-  }
-
-  if (data.sprachen.length > 0) {
-    filledFields.push({
-      targetField: "languages",
-      extractedValue: data.sprachen.map((lang) => ({
-        language: lang,
-        level: "",
-      })),
-      confidence: "medium",
-      evidence: { ...stubEvidence, exactText: `${data.sprachen.length} Sprachen` },
-    });
-  }
-
-  if (data.erfahrungen.length > 0) {
-    const experiences = data.erfahrungen.map((erf) => {
-      const descParts: string[] = [];
-      if (erf.aufgaben.length > 0) descParts.push("Aufgaben: " + erf.aufgaben.join("; "));
-      if (erf.erfolge.length > 0) descParts.push("Erfolge: " + erf.erfolge.join("; "));
-      if (erf.herausforderungen_und_learnings.length > 0)
-        descParts.push("Learnings: " + erf.herausforderungen_und_learnings.join("; "));
-      if (erf.tools.length > 0) descParts.push("Tools: " + erf.tools.join(", "));
-
-      return {
-        role: erf.rolle,
-        company: erf.projekt_id || "",
-        description: descParts.join("\n"),
-        startMonth: "",
-        startYear: "",
-        endMonth: "",
-        endYear: "",
-        current: false,
-      };
-    });
-
-    filledFields.push({
-      targetField: "experience",
-      extractedValue: experiences,
-      confidence: "medium",
-      evidence: { ...stubEvidence, exactText: `${data.erfahrungen.length} Erfahrungen` },
-    });
-  }
-
-  if (data.ausbildungen.length > 0) {
-    const education = data.ausbildungen.map((aus) => ({
-      degree: aus.abschluss,
-      institution: aus.institution,
-      startMonth: "",
-      startYear: "",
-      endMonth: "",
-      endYear: "",
-    }));
-
-    filledFields.push({
-      targetField: "education",
-      extractedValue: education,
-      confidence: "medium",
-      evidence: { ...stubEvidence, exactText: `${data.ausbildungen.length} Ausbildungen` },
-    });
-  }
-
-  const unmappedItems: CandidateAutoFillDraftV2["unmappedItems"] = [];
-
-  if (data.weiterbildungen.length > 0) {
-    for (const wb of data.weiterbildungen) {
-      unmappedItems.push({
-        extractedLabel: "Weiterbildung",
-        extractedValue: wb,
-        category: "education",
-        evidence: { ...stubEvidence, exactText: wb },
-      });
-    }
-  }
-
-  if (data.unklare_inhalte) {
-    unmappedItems.push({
-      extractedLabel: "Unklare Inhalte",
-      extractedValue: data.unklare_inhalte,
-      category: "other",
-      evidence: { ...stubEvidence, exactText: data.unklare_inhalte },
-    });
-  }
-
-  return {
-    filledFields,
-    ambiguousFields: [],
-    unmappedItems,
-    metadata: {
-      fileName,
-      fileType,
-      fileSize,
-      pageCount: 0,
-      processingTimeMs,
-      timestamp: new Date().toISOString(),
-    },
-    extractionVersion: CV_EXTRACTION_VERSION,
-    provider: "azure-document-intelligence", // kept for type compat
-  };
+  // 3. Convert to DraftV2 for the mapping modal
+  return parsedCvToDraftV2(validated, {
+    fileName,
+    fileType,
+    fileSize,
+    processingTimeMs,
+  });
 }

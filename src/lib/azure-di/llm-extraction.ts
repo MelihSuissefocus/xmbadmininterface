@@ -8,6 +8,7 @@ import { type LlmExtractionResponse, type LlmEvidence } from "@/lib/llm-schema";
 import { validateEmail, normalizePhoneE164 } from "./validation";
 import { defaultFactors, calculateConfidence, getConfidenceLevel } from "./confidence";
 import { cvLogger } from "@/lib/logger";
+import { mapLlmResponseToParsedCv, validateParsedCv, parsedCvToDraftV2 } from "@/lib/cv-parser";
 
 const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const PHONE_PATTERN = /(\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g;
@@ -173,10 +174,48 @@ function buildDraftFromLlmResult(
   pageCount: number,
   processingTimeMs: number
 ): CandidateAutoFillDraftV2 {
+  // ── Step 1: Use cv-parser for normalized extraction ─────────────────
+  const parsedCv = mapLlmResponseToParsedCv(llmResult);
+  const { data: validated } = validateParsedCv(parsedCv);
+
+  // ── Step 2: Build draft with evidence from LLM ──────────────────────
   const filledFields: ExtractedFieldWithEvidence[] = [];
   const ambiguousFields: CandidateAutoFillDraftV2["ambiguousFields"] = [];
   const flaggedFields = new Set(llmResult.metadata.needs_review_fields);
 
+  // Helper to get evidence for a field
+  const getEvidence = (evidenceArr: LlmEvidence[], fallbackConfidence = 0.8): FieldEvidence => {
+    return llmEvidenceToFieldEvidence(evidenceArr, packedInput, fallbackConfidence);
+  };
+
+  // Helper to add a field with confidence scoring
+  const addField = (
+    targetField: string,
+    value: unknown,
+    evidenceArr: LlmEvidence[],
+    isValidated = true
+  ) => {
+    if (value === null || value === undefined || value === "") return;
+    if (Array.isArray(value) && value.length === 0) return;
+
+    const hasEvidence = evidenceArr.length > 0;
+    const isFlagged = flaggedFields.has(targetField);
+    const { score, status } = computeFieldScore(hasEvidence, evidenceArr.length, isFlagged, isValidated);
+    const evidence = getEvidence(evidenceArr, score);
+
+    if (status === "autofill") {
+      filledFields.push({ targetField, extractedValue: value, confidence: getConfidenceLevel(score), evidence });
+    } else {
+      ambiguousFields.push({
+        extractedLabel: targetField,
+        extractedValue: typeof value === "string" ? value : JSON.stringify(value),
+        suggestedTargets: [{ targetField, confidence: getConfidenceLevel(score), reason: "LLM extraction" }],
+        evidence,
+      });
+    }
+  };
+
+  // ── Deterministic fields override LLM for email/phone/linkedin ──────
   if (deterministicFields.email) {
     filledFields.push({
       targetField: "email",
@@ -184,26 +223,8 @@ function buildDraftFromLlmResult(
       confidence: "high",
       evidence: deterministicFields.email.evidence,
     });
-  } else if (llmResult.contact.email) {
-    const hasEvidence = llmResult.contact.evidence.length > 0;
-    const { score, status } = computeFieldScore(hasEvidence, llmResult.contact.evidence.length, flaggedFields.has("email"), true);
-    const evidence = llmEvidenceToFieldEvidence(llmResult.contact.evidence, packedInput, score);
-
-    if (status === "autofill") {
-      filledFields.push({
-        targetField: "email",
-        extractedValue: llmResult.contact.email,
-        confidence: getConfidenceLevel(score),
-        evidence,
-      });
-    } else if (status === "review") {
-      ambiguousFields.push({
-        extractedLabel: "email",
-        extractedValue: llmResult.contact.email,
-        suggestedTargets: [{ targetField: "email", confidence: getConfidenceLevel(score), reason: "LLM extraction" }],
-        evidence,
-      });
-    }
+  } else if (validated.email) {
+    addField("email", validated.email, llmResult.contact.evidence);
   }
 
   if (deterministicFields.phone) {
@@ -213,86 +234,8 @@ function buildDraftFromLlmResult(
       confidence: "high",
       evidence: deterministicFields.phone.evidence,
     });
-  } else if (llmResult.contact.phone) {
-    const hasEvidence = llmResult.contact.evidence.length > 0;
-    const { score, status } = computeFieldScore(hasEvidence, llmResult.contact.evidence.length, flaggedFields.has("phone"), true);
-    const evidence = llmEvidenceToFieldEvidence(llmResult.contact.evidence, packedInput, score);
-
-    if (status === "autofill") {
-      filledFields.push({
-        targetField: "phone",
-        extractedValue: llmResult.contact.phone,
-        confidence: getConfidenceLevel(score),
-        evidence,
-      });
-    } else if (status === "review") {
-      ambiguousFields.push({
-        extractedLabel: "phone",
-        extractedValue: llmResult.contact.phone,
-        suggestedTargets: [{ targetField: "phone", confidence: getConfidenceLevel(score), reason: "LLM extraction" }],
-        evidence,
-      });
-    }
-  }
-
-  if (llmResult.person.firstName) {
-    const hasEvidence = llmResult.person.evidence.length > 0;
-    const isFlagged = flaggedFields.has("firstName");
-    const { score, status } = computeFieldScore(hasEvidence, llmResult.person.evidence.length, isFlagged, !isFlagged);
-    const evidence = llmEvidenceToFieldEvidence(llmResult.person.evidence, packedInput, score);
-
-    if (status === "autofill") {
-      filledFields.push({
-        targetField: "firstName",
-        extractedValue: llmResult.person.firstName,
-        confidence: getConfidenceLevel(score),
-        evidence,
-      });
-    } else if (status === "review") {
-      ambiguousFields.push({
-        extractedLabel: "firstName",
-        extractedValue: llmResult.person.firstName,
-        suggestedTargets: [{ targetField: "firstName", confidence: getConfidenceLevel(score), reason: "LLM extraction - needs verification" }],
-        evidence,
-      });
-    }
-  } else if (flaggedFields.has("firstName")) {
-    ambiguousFields.push({
-      extractedLabel: "firstName",
-      extractedValue: "",
-      suggestedTargets: [{ targetField: "firstName", confidence: "low", reason: "Could not determine - please enter manually" }],
-      evidence: { page: 1, exactText: "", confidence: 0 },
-    });
-  }
-
-  if (llmResult.person.lastName) {
-    const hasEvidence = llmResult.person.evidence.length > 0;
-    const isFlagged = flaggedFields.has("lastName");
-    const { score, status } = computeFieldScore(hasEvidence, llmResult.person.evidence.length, isFlagged, !isFlagged);
-    const evidence = llmEvidenceToFieldEvidence(llmResult.person.evidence, packedInput, score);
-
-    if (status === "autofill") {
-      filledFields.push({
-        targetField: "lastName",
-        extractedValue: llmResult.person.lastName,
-        confidence: getConfidenceLevel(score),
-        evidence,
-      });
-    } else if (status === "review") {
-      ambiguousFields.push({
-        extractedLabel: "lastName",
-        extractedValue: llmResult.person.lastName,
-        suggestedTargets: [{ targetField: "lastName", confidence: getConfidenceLevel(score), reason: "LLM extraction - needs verification" }],
-        evidence,
-      });
-    }
-  } else if (flaggedFields.has("lastName")) {
-    ambiguousFields.push({
-      extractedLabel: "lastName",
-      extractedValue: "",
-      suggestedTargets: [{ targetField: "lastName", confidence: "low", reason: "Could not determine - please enter manually" }],
-      evidence: { page: 1, exactText: "", confidence: 0 },
-    });
+  } else if (validated.phone) {
+    addField("phone", validated.phone, llmResult.contact.evidence);
   }
 
   if (deterministicFields.linkedinUrl) {
@@ -302,147 +245,164 @@ function buildDraftFromLlmResult(
       confidence: "high",
       evidence: deterministicFields.linkedinUrl.evidence,
     });
-  } else if (llmResult.contact.linkedinUrl) {
+  } else if (validated.linkedin_url) {
     filledFields.push({
       targetField: "linkedinUrl",
-      extractedValue: llmResult.contact.linkedinUrl,
+      extractedValue: validated.linkedin_url,
       confidence: "medium",
-      evidence: llmEvidenceToFieldEvidence(llmResult.contact.evidence, packedInput, 0.8),
+      evidence: getEvidence(llmResult.contact.evidence, 0.8),
     });
   }
 
+  // ── Person name (with cleaned titles) ───────────────────────────────
+  if (validated.first_name) {
+    addField("firstName", validated.first_name, llmResult.person.evidence, !flaggedFields.has("firstName"));
+  } else if (flaggedFields.has("firstName")) {
+    ambiguousFields.push({
+      extractedLabel: "firstName",
+      extractedValue: "",
+      suggestedTargets: [{ targetField: "firstName", confidence: "low", reason: "Konnte nicht ermittelt werden - bitte manuell eingeben" }],
+      evidence: { page: 1, exactText: "", confidence: 0 },
+    });
+  }
+
+  if (validated.last_name) {
+    addField("lastName", validated.last_name, llmResult.person.evidence, !flaggedFields.has("lastName"));
+  } else if (flaggedFields.has("lastName")) {
+    ambiguousFields.push({
+      extractedLabel: "lastName",
+      extractedValue: "",
+      suggestedTargets: [{ targetField: "lastName", confidence: "low", reason: "Konnte nicht ermittelt werden - bitte manuell eingeben" }],
+      evidence: { page: 1, exactText: "", confidence: 0 },
+    });
+  }
+
+  // ── Address (with canton normalization) ─────────────────────────────
   if (llmResult.contact.address) {
-    const addr = llmResult.contact.address;
-    if (addr.street) {
-      filledFields.push({
-        targetField: "street",
-        extractedValue: addr.street,
-        confidence: "medium",
-        evidence: llmEvidenceToFieldEvidence(addr.evidence || llmResult.contact.evidence, packedInput, 0.8),
-      });
+    const addrEvidence = llmResult.contact.address.evidence || llmResult.contact.evidence;
+    if (validated.street) {
+      filledFields.push({ targetField: "street", extractedValue: validated.street, confidence: "medium", evidence: getEvidence(addrEvidence, 0.8) });
     }
-    if (addr.postalCode) {
-      filledFields.push({
-        targetField: "postalCode",
-        extractedValue: addr.postalCode,
-        confidence: "medium",
-        evidence: llmEvidenceToFieldEvidence(addr.evidence || llmResult.contact.evidence, packedInput, 0.8),
-      });
+    if (validated.postal_code) {
+      filledFields.push({ targetField: "postalCode", extractedValue: validated.postal_code, confidence: "medium", evidence: getEvidence(addrEvidence, 0.8) });
     }
-    if (addr.city) {
-      filledFields.push({
-        targetField: "city",
-        extractedValue: addr.city,
-        confidence: "medium",
-        evidence: llmEvidenceToFieldEvidence(addr.evidence || llmResult.contact.evidence, packedInput, 0.8),
-      });
+    if (validated.city) {
+      filledFields.push({ targetField: "city", extractedValue: validated.city, confidence: "medium", evidence: getEvidence(addrEvidence, 0.8) });
     }
-    if (addr.canton) {
-      filledFields.push({
-        targetField: "canton",
-        extractedValue: addr.canton,
-        confidence: "medium",
-        evidence: llmEvidenceToFieldEvidence(addr.evidence || llmResult.contact.evidence, packedInput, 0.8),
-      });
+    if (validated.canton) {
+      filledFields.push({ targetField: "canton", extractedValue: validated.canton, confidence: "medium", evidence: getEvidence(addrEvidence, 0.7) });
     }
   }
 
-  if (llmResult.languages.length > 0) {
-    const langArray = llmResult.languages.map((l) => ({
-      language: l.name,
-      level: l.level || "B2",
-    }));
+  // ── Languages (with normalized levels) ──────────────────────────────
+  if (validated.languages.length > 0) {
     const firstWithEvidence = llmResult.languages.find((l) => l.evidence.length > 0);
-    const evidence = firstWithEvidence 
-      ? llmEvidenceToFieldEvidence(firstWithEvidence.evidence, packedInput, 0.85)
+    const evidence = firstWithEvidence
+      ? getEvidence(firstWithEvidence.evidence, 0.85)
       : { page: 1, exactText: "", confidence: 0.7 };
 
     filledFields.push({
       targetField: "languages",
-      extractedValue: langArray,
+      extractedValue: validated.languages,
       confidence: "medium",
       evidence,
     });
   }
 
-  if (llmResult.skills.length > 0) {
-    const skillNames = llmResult.skills.map((s) => s.name);
+  // ── Skills (normalized & deduplicated) ──────────────────────────────
+  if (validated.skills.length > 0) {
     const firstWithEvidence = llmResult.skills.find((s) => s.evidence.length > 0);
     const evidence = firstWithEvidence
-      ? llmEvidenceToFieldEvidence(firstWithEvidence.evidence, packedInput, 0.85)
+      ? getEvidence(firstWithEvidence.evidence, 0.85)
       : { page: 1, exactText: "", confidence: 0.7 };
 
     filledFields.push({
       targetField: "skills",
-      extractedValue: skillNames,
+      extractedValue: validated.skills,
       confidence: "medium",
       evidence,
     });
   }
 
-  if (llmResult.experience.length > 0) {
-    const expArray = llmResult.experience.map((e) => {
-      // CRITICAL FIX: Use responsibilities array if available
-      const responsibilities = (e as Record<string, unknown>).responsibilities as string[] | undefined;
-      
-      // Combine responsibilities into description
-      let description = e.description || "";
-      if (responsibilities && responsibilities.length > 0) {
-        description = responsibilities.map(r => `• ${r}`).join("\n");
-      }
-      
-      return {
-        company: e.company || "",
-        role: e.title || "",
-        startMonth: "",
-        startYear: e.startDate || "",
-        endMonth: "",
-        endYear: e.endDate === "present" ? "" : (e.endDate || ""),
-        current: e.endDate === "present",
-        description,
-      };
-    });
+  // ── Work experience (with parsed dates) ─────────────────────────────
+  if (validated.work_experience.length > 0) {
     const firstWithEvidence = llmResult.experience.find((e) => e.evidence.length > 0);
     const evidence = firstWithEvidence
-      ? llmEvidenceToFieldEvidence(firstWithEvidence.evidence, packedInput, 0.85)
+      ? getEvidence(firstWithEvidence.evidence, 0.85)
       : { page: 1, exactText: "", confidence: 0.7 };
 
     filledFields.push({
       targetField: "experience",
-      extractedValue: expArray,
+      extractedValue: validated.work_experience,
       confidence: "medium",
       evidence,
     });
   }
 
-  if (llmResult.education.length > 0) {
-    const eduArray = llmResult.education.map((e) => ({
-      degree: e.degree || "",
-      institution: e.institution || "",
-      startMonth: "",
-      startYear: e.startDate || "",
-      endMonth: "",
-      endYear: e.endDate || "",
-    }));
+  // ── Education (with parsed dates) ───────────────────────────────────
+  if (validated.education.length > 0) {
     const firstWithEvidence = llmResult.education.find((e) => e.evidence.length > 0);
     const evidence = firstWithEvidence
-      ? llmEvidenceToFieldEvidence(firstWithEvidence.evidence, packedInput, 0.85)
+      ? getEvidence(firstWithEvidence.evidence, 0.85)
       : { page: 1, exactText: "", confidence: 0.7 };
 
     filledFields.push({
       targetField: "education",
-      extractedValue: eduArray,
+      extractedValue: validated.education,
       confidence: "medium",
       evidence,
     });
   }
 
-  // CRITICAL FIX: Convert unmapped_segments to unmappedItems
+  // ── Target position ─────────────────────────────────────────────────
+  if (validated.target_position) {
+    filledFields.push({
+      targetField: "targetRole",
+      extractedValue: validated.target_position,
+      confidence: "medium",
+      evidence: { page: 1, exactText: validated.target_position, confidence: 0.7 },
+    });
+  }
+
+  // ── Years of experience (calculated) ────────────────────────────────
+  if (validated.years_experience !== null && validated.years_experience > 0) {
+    filledFields.push({
+      targetField: "yearsOfExperience",
+      extractedValue: validated.years_experience,
+      confidence: "medium",
+      evidence: { page: 1, exactText: `${validated.years_experience} Jahre (berechnet)`, confidence: 0.7 },
+    });
+  }
+
+  // ── Highlights ──────────────────────────────────────────────────────
+  if (validated.highlights.length > 0) {
+    filledFields.push({
+      targetField: "highlights",
+      extractedValue: validated.highlights,
+      confidence: "medium",
+      evidence: { page: 1, exactText: `${validated.highlights.length} Highlights`, confidence: 0.7 },
+    });
+  }
+
+  // ── Certifications ──────────────────────────────────────────────────
+  if (validated.certifications.length > 0) {
+    filledFields.push({
+      targetField: "certificates",
+      extractedValue: validated.certifications.map(c => ({
+        name: c.name,
+        issuer: c.issuer,
+        date: c.year,
+      })),
+      confidence: "medium",
+      evidence: { page: 1, exactText: `${validated.certifications.length} Zertifikate`, confidence: 0.7 },
+    });
+  }
+
+  // ── Unmapped segments ───────────────────────────────────────────────
   const unmappedItems: CandidateAutoFillDraftV2["unmappedItems"] = [];
-  
+
   if (llmResult.unmapped_segments && llmResult.unmapped_segments.length > 0) {
     for (const segment of llmResult.unmapped_segments) {
-      // Map detected_type to category
       const categoryMap: Record<string, CandidateAutoFillDraftV2["unmappedItems"][0]["category"]> = {
         date: "date",
         skill: "skill",
@@ -452,11 +412,11 @@ function buildDraftFromLlmResult(
         education_details: "education",
         other: "other",
       };
-      
-      const line = segment.line_reference 
+
+      const line = segment.line_reference
         ? findLineFromEvidence(packedInput, { lineId: segment.line_reference, page: 1, text: segment.original_text })
         : undefined;
-      
+
       unmappedItems.push({
         extractedLabel: segment.suggested_parent || segment.suggested_field || undefined,
         extractedValue: segment.original_text,
@@ -468,7 +428,7 @@ function buildDraftFromLlmResult(
         },
       });
     }
-    
+
     cvLogger.info("Unmapped segments converted", {
       action: "buildDraftFromLlmResult",
       count: unmappedItems.length,
