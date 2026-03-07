@@ -116,11 +116,12 @@ export function CVMappingModal({
 }: CVMappingModalProps) {
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
   const [ambiguousSelections, setAmbiguousSelections] = useState<Record<number, string | null>>({});
+  const [unmappedSelections, setUnmappedSelections] = useState<Record<number, string | null>>({});
   const [expandedEvidence, setExpandedEvidence] = useState<Set<string>>(new Set());
 
   if (!draft) return null;
 
-  const { filledFields, ambiguousFields, metadata, extractionVersion, provider } = draft;
+  const { filledFields, ambiguousFields, unmappedItems = [], metadata, extractionVersion, provider } = draft;
 
   const getFieldState = (field: ExtractedFieldWithEvidence): FieldState => {
     return fieldStates[field.targetField] || {
@@ -236,12 +237,29 @@ export function CVMappingModal({
       }
     });
 
+    // Process unmapped items — append to chosen field (usually notes)
+    unmappedItems.forEach((item, index) => {
+      const selectedTarget = unmappedSelections[index];
+      if (selectedTarget && selectedTarget !== "ignore") {
+        if (selectedTarget === "notes") {
+          // Append to notes rather than replace
+          const label = item.extractedLabel ? `${item.extractedLabel}: ` : "";
+          const existing = (mappedData.notes as string) || "";
+          const separator = existing ? "\n" : "";
+          mappedData.notes = `${existing}${separator}${label}${item.extractedValue}`;
+        } else {
+          setNestedValue(mappedData, selectedTarget, item.extractedValue);
+        }
+      }
+    });
+
     onConfirm(mappedData);
   };
 
   const handleClose = () => {
     setFieldStates({});
     setAmbiguousSelections({});
+    setUnmappedSelections({});
     setExpandedEvidence(new Set());
     onCancel();
   };
@@ -449,7 +467,76 @@ export function CVMappingModal({
             </div>
           )}
 
-          {filledFields.length === 0 && ambiguousFields.length === 0 && (
+          {unmappedItems.length > 0 && (
+            <>
+              {(filledFields.length > 0 || ambiguousFields.length > 0) && (
+                <Separator className="my-4" />
+              )}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-orange-600" />
+                  Nicht zugeordnete Inhalte ({unmappedItems.length})
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Diese Texte konnten keinem Feld automatisch zugeordnet werden. Bitte wählen Sie, wohin sie gehören.
+                </p>
+                <div className="space-y-3">
+                  {unmappedItems.map((item, index) => {
+                    const selectedTarget = unmappedSelections[index];
+                    return (
+                      <div
+                        key={index}
+                        className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-900"
+                      >
+                        <div className="mb-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">
+                              {item.extractedLabel || "Unbekannter Inhalt"}
+                            </div>
+                            {item.category && (
+                              <Badge variant="outline" className="text-xs">
+                                {item.category}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {item.extractedValue.length > 300
+                              ? item.extractedValue.substring(0, 300) + "..."
+                              : item.extractedValue}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 items-center mt-2">
+                          <select
+                            className="flex-1 p-2 border rounded text-sm"
+                            value={selectedTarget ?? "notes"}
+                            onChange={(e) =>
+                              setUnmappedSelections((prev) => ({ ...prev, [index]: e.target.value }))
+                            }
+                          >
+                            <optgroup label="Empfohlen">
+                              <option value="notes">📝 In Notizen speichern</option>
+                            </optgroup>
+                            <optgroup label="Andere Felder">
+                              {ALL_AVAILABLE_FIELDS.filter((f) => f !== "notes").map((fieldName) => (
+                                <option key={fieldName} value={fieldName}>
+                                  {FIELD_LABELS[fieldName] || fieldName}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Aktionen">
+                              <option value="ignore">❌ Ignorieren</option>
+                            </optgroup>
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {filledFields.length === 0 && ambiguousFields.length === 0 && unmappedItems.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
               Keine Daten gefunden. Bitte versuchen Sie es mit einem anderen CV.
