@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { submitCvForExtraction, CvExtractionError } from "@/lib/cv-extraction/client";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const pdfBuffer = Buffer.from(arrayBuffer);
 
-    const { jobId } = await submitCvForExtraction(pdfBuffer, file.name);
+    const { jobId } = await submitCvForExtraction(pdfBuffer, file.name, randomUUID());
 
     return NextResponse.json({
       status: "processing",
