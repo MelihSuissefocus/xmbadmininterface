@@ -273,7 +273,7 @@ async function processCvAnalysisJob(
     try {
       cvLogger.info("Using local Mac Mini API for extraction (async)", { jobId, action: "processCvAnalysisJob" });
 
-      const { externalJobId } = await submitToLocalApi(fileBytes, fileName, jobId);
+      const { externalJobId } = await submitToLocalApi(fileBytes, fileName);
 
       await db
         .update(cvAnalysisJobs)

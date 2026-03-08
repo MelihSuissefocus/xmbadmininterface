@@ -45,24 +45,9 @@ function getConfig() {
  */
 export async function submitCvForExtraction(
   pdfBuffer: Buffer,
-  fileName: string,
-  jobId: string
+  fileName: string
 ): Promise<{ jobId: string }> {
   const { url, key } = getConfig();
-
-  // Build callback URL from VERCEL_URL or CV_CALLBACK_URL
-  const callbackBase =
-    process.env.CV_CALLBACK_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
-
-  if (!callbackBase) {
-    throw new CvExtractionError(
-      "CV_CALLBACK_URL oder VERCEL_URL ist nicht konfiguriert.",
-      "CONFIG_ERROR"
-    );
-  }
-
-  const callbackUrl = `${callbackBase.replace(/\/$/, "")}/api/cv-callback`;
 
   // Clean URL joining: ensure base URL ends with /, endpoint starts without /
   const baseUrl = url.endsWith("/") ? url : `${url}/`;
@@ -76,17 +61,13 @@ export async function submitCvForExtraction(
   const timeout = setTimeout(() => controller.abort(), CV_API_TIMEOUT_MS);
 
   try {
-    console.log(`[CV-API] POST ${endpoint} | file=${fileName} | size=${pdfBuffer.length} bytes | jobId=${jobId} | callbackUrl=${callbackUrl}`);
+    console.log(`[CV-API] POST ${endpoint} | file=${fileName} | size=${pdfBuffer.length} bytes`);
 
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Xmb-pdftojsonapi": key,
-        "X-Job-Id": jobId,
-        "X-Callback-Url": callbackUrl,
-        "X-Callback-Secret": key,
         "accept": "application/json",
-        "ngrok-skip-browser-warning": "true",
       },
       body: formData,
       signal: controller.signal,
