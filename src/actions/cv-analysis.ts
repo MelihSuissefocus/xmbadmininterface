@@ -22,6 +22,12 @@ import { getExtractionConfigForJob } from "./extraction-config";
 const OVERALL_ANALYSIS_TIMEOUT_MS = 60000;
 const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
+// Mac Mini CV extraction config
+const MAC_MINI_API_URL = process.env.MAC_MINI_API_URL;
+const MAC_MINI_API_KEY = process.env.MAC_MINI_API_KEY;
+const CV_CALLBACK_SECRET = process.env.CV_CALLBACK_SECRET;
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL || process.env.VERCEL_URL;
+
 interface ActionResult<T = unknown> {
   success: boolean;
   message: string;
@@ -219,7 +225,12 @@ export async function createCvAnalysisJob(
 
     cvLogger.info("Analysis job created", { userId, jobId: job.id, action: "createCvAnalysisJob" });
 
-    processCvAnalysisJob(job.id, fileBytes, mimeType, safeFileName, fileExtension, fileSize, tenantId).catch(() => {});
+    // Dispatch to Mac Mini if configured, otherwise fall back to local processing
+    if (MAC_MINI_API_URL && MAC_MINI_API_KEY && CV_CALLBACK_SECRET) {
+      dispatchToMacMini(job.id, fileBytes, safeFileName, tenantId).catch(() => {});
+    } else {
+      processCvAnalysisJob(job.id, fileBytes, mimeType, safeFileName, fileExtension, fileSize, tenantId).catch(() => {});
+    }
 
     return {
       success: true,
@@ -230,6 +241,63 @@ export async function createCvAnalysisJob(
     const cvError = wrapError(error);
     cvLogger.error("Failed to create analysis job", { action: "createCvAnalysisJob" });
     return cvError.toUserResponse();
+  }
+}
+
+async function dispatchToMacMini(
+  jobId: string,
+  fileBytes: Buffer,
+  fileName: string,
+  tenantId: string
+): Promise<void> {
+  try {
+    await db
+      .update(cvAnalysisJobs)
+      .set({ status: "processing", updatedAt: new Date() })
+      .where(eq(cvAnalysisJobs.id, jobId));
+
+    // Build callback URL
+    const baseUrl = NEXTAUTH_URL?.startsWith("http")
+      ? NEXTAUTH_URL
+      : `https://${NEXTAUTH_URL}`;
+    const callbackUrl = `${baseUrl}/api/cv-callback`;
+
+    // Send file as multipart/form-data to Mac Mini
+    const formData = new FormData();
+    const blob = new Blob([new Uint8Array(fileBytes)], { type: "application/pdf" });
+    formData.append("file", blob, fileName);
+
+    const response = await fetch(`${MAC_MINI_API_URL}/extract-cv/`, {
+      method: "POST",
+      headers: {
+        "Xmb-pdftojsonapi": MAC_MINI_API_KEY!,
+        "X-Job-Id": jobId,
+        "X-Callback-Url": callbackUrl,
+        "X-Callback-Secret": CV_CALLBACK_SECRET!,
+      },
+      body: formData,
+      signal: AbortSignal.timeout(15000), // 15s timeout for upload only
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "unknown");
+      throw new Error(`Mac Mini returned ${response.status}: ${text}`);
+    }
+
+    cvLogger.info("CV dispatched to Mac Mini", { jobId, action: "dispatchToMacMini" });
+  } catch (error) {
+    cvLogger.error("Failed to dispatch to Mac Mini", { jobId, error: String(error), action: "dispatchToMacMini" });
+
+    await db
+      .update(cvAnalysisJobs)
+      .set({
+        status: "failed",
+        error: "Mac Mini nicht erreichbar. Bitte versuche es später erneut.",
+        errorCode: "MAC_MINI_UNREACHABLE",
+        updatedAt: new Date(),
+        completedAt: new Date(),
+      })
+      .where(eq(cvAnalysisJobs.id, jobId));
   }
 }
 
