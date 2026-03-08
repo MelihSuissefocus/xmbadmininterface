@@ -7,8 +7,9 @@ import { submitCvForExtraction } from "./client";
 
 export async function submitToLocalApi(
   fileBytes: Buffer,
-  fileName: string
+  fileName: string,
+  internalJobId?: string
 ): Promise<{ externalJobId: string }> {
-  const { jobId } = await submitCvForExtraction(fileBytes, fileName);
+  const { jobId } = await submitCvForExtraction(fileBytes, fileName, internalJobId);
   return { externalJobId: jobId };
 }

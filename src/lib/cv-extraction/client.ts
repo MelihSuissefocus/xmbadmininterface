@@ -23,10 +23,18 @@ export class CvExtractionError extends Error {
 function getConfig() {
   let url = process.env.CV_API_URL;
   const key = process.env.CV_API_KEY;
+  const appUrl = process.env.APP_URL;
 
   if (!url || !key) {
     throw new CvExtractionError(
       "CV_API_URL oder CV_API_KEY ist nicht konfiguriert.",
+      "CONFIG_ERROR"
+    );
+  }
+
+  if (!appUrl) {
+    throw new CvExtractionError(
+      "APP_URL ist nicht konfiguriert (wird für CV-Callback benötigt).",
       "CONFIG_ERROR"
     );
   }
@@ -36,7 +44,9 @@ function getConfig() {
     url = `https://${url}`;
   }
 
-  return { url, key };
+  const callbackUrl = `${appUrl.replace(/\/$/, "")}/api/cv-callback`;
+
+  return { url, key, callbackUrl };
 }
 
 /**
@@ -45,9 +55,10 @@ function getConfig() {
  */
 export async function submitCvForExtraction(
   pdfBuffer: Buffer,
-  fileName: string
+  fileName: string,
+  jobId?: string
 ): Promise<{ jobId: string }> {
-  const { url, key } = getConfig();
+  const { url, key, callbackUrl } = getConfig();
 
   // Clean URL joining: ensure base URL ends with /, endpoint starts without /
   const baseUrl = url.endsWith("/") ? url : `${url}/`;
@@ -63,12 +74,24 @@ export async function submitCvForExtraction(
   try {
     console.log(`[CV-API] POST ${endpoint} | file=${fileName} | size=${pdfBuffer.length} bytes`);
 
+    const headers: Record<string, string> = {
+      "Xmb-pdftojsonapi": key,
+      "accept": "application/json",
+      "X-Callback-Url": callbackUrl,
+      "ngrok-skip-browser-warning": "true",
+    };
+    if (jobId) {
+      headers["X-Job-Id"] = jobId;
+    }
+    if (key) {
+      headers["X-Callback-Secret"] = key;
+    }
+
+    console.log(`[CV-API] Callback URL: ${callbackUrl}`);
+
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        "Xmb-pdftojsonapi": key,
-        "accept": "application/json",
-      },
+      headers,
       body: formData,
       signal: controller.signal,
     });

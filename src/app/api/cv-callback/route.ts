@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // 1. Validate API key
-    const apiKey = request.headers.get("Xmb-pdftojsonapi");
+    // 1. Validate API key (accept both header names)
+    const apiKey = request.headers.get("X-Callback-Secret") || request.headers.get("Xmb-pdftojsonapi");
     const expectedKey = process.env.CV_API_KEY;
 
     if (!expectedKey || apiKey !== expectedKey) {
@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 2. Parse body
-    const body: CallbackBody = await request.json();
-    const { job_id, ...cvData } = body;
+    // 2. Parse body — Mac Mini sends { job_id, data: {...} } or { job_id, error: "..." }
+    const body = await request.json();
+    const { job_id, data: cvData, error: extractionError } = body;
 
     if (!job_id) {
       console.log("[CV-CALLBACK] Missing job_id in request body");
@@ -51,9 +51,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // 4. Map response to draft
     const latencyMs = job.createdAt ? Date.now() - job.createdAt.getTime() : 0;
 
+    // 4. Handle extraction error from Mac Mini
+    if (extractionError || !cvData) {
+      console.log(`[CV-CALLBACK] Job ${job_id} failed: ${extractionError || "no data"}`);
+      await db
+        .update(cvAnalysisJobs)
+        .set({
+          status: "failed",
+          latencyMs,
+          updatedAt: new Date(),
+          completedAt: new Date(),
+        })
+        .where(eq(cvAnalysisJobs.id, job.id));
+      return NextResponse.json({ success: true, status: "failed" });
+    }
+
+    // 5. Map response to draft
     const draft = mapMacMiniResponseToDraftV2(
       cvData as MacMiniCvResponse,
       job.fileName,
