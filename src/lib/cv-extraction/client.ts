@@ -86,6 +86,7 @@ export async function submitCvForExtraction(
         "X-Callback-Url": callbackUrl,
         "X-Callback-Secret": key,
         "accept": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: formData,
       signal: controller.signal,
