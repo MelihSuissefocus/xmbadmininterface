@@ -128,7 +128,7 @@ Since the website is hosted on a different domain than your admin panel, you nee
 ```
 Access-Control-Allow-Origin: https://xmb-group.ch
 Access-Control-Allow-Methods: GET, POST, OPTIONS
-Access-Control-Allow-Headers: Content-Type, X-API-Key
+Access-Control-Allow-Headers: Content-Type, Xmb-pdftojsonapi
 ```
 
 If you use Express.js:
@@ -138,7 +138,7 @@ const cors = require('cors');
 app.use(cors({
     origin: 'https://xmb-group.ch',
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'X-API-Key']
+    allowedHeaders: ['Content-Type', 'Xmb-pdftojsonapi']
 }));
 ```
 
@@ -241,14 +241,14 @@ createdAt           datetime  auto
 If you set an `apiKey` in the config, the website sends it as a header:
 
 ```
-X-API-Key: your-api-key-here
+Xmb-pdftojsonapi: your-api-key-here
 ```
 
 In your backend, validate this on every request:
 
 ```javascript
 function authenticateApiKey(req, res, next) {
-    const key = req.headers['x-api-key'];
+    const key = req.headers['Xmb-pdftojsonapi'];
     if (key !== process.env.WEBSITE_API_KEY) {
         return res.status(401).json({ error: 'Unauthorized' });
     }

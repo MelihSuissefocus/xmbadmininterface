@@ -2,88 +2,90 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { cvAnalysisJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { mapMacMiniToAutoFillDraft, type MacMiniCVData } from "@/lib/cv/mac-mini-mapper";
+import { mapMacMiniResponseToDraftV2 } from "@/lib/cv-extraction/mapper";
+import type { MacMiniCvResponse } from "@/lib/cv-extraction/types";
 
-const CV_CALLBACK_SECRET = process.env.CV_CALLBACK_SECRET;
+interface CallbackBody extends MacMiniCvResponse {
+  job_id: string;
+}
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+
   try {
-    // 1. Authenticate via shared secret
-    const secret = req.headers.get("x-callback-secret");
-    if (!CV_CALLBACK_SECRET || secret !== CV_CALLBACK_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // 1. Validate API key
+    const apiKey = request.headers.get("Xmb-pdftojsonapi");
+    const expectedKey = process.env.CV_API_KEY;
+
+    if (!expectedKey || apiKey !== expectedKey) {
+      console.log("[CV-CALLBACK] Auth failed: invalid or missing API key");
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // 2. Parse body
-    const body = await req.json();
-    const { job_id, data } = body as { job_id?: string; data?: MacMiniCVData };
+    const body: CallbackBody = await request.json();
+    const { job_id, ...cvData } = body;
 
-    if (!job_id || !data) {
-      return NextResponse.json(
-        { error: "Missing job_id or data" },
-        { status: 400 }
-      );
+    if (!job_id) {
+      console.log("[CV-CALLBACK] Missing job_id in request body");
+      return NextResponse.json({ error: "Missing job_id" }, { status: 400 });
     }
 
-    // 3. Find the job in DB
+    console.log(`[CV-CALLBACK] Received callback for job_id=${job_id}`);
+
+    // 3. Find job by externalJobId
     const [job] = await db
       .select({
         id: cvAnalysisJobs.id,
-        status: cvAnalysisJobs.status,
         fileName: cvAnalysisJobs.fileName,
         fileType: cvAnalysisJobs.fileType,
         fileSize: cvAnalysisJobs.fileSize,
         createdAt: cvAnalysisJobs.createdAt,
       })
       .from(cvAnalysisJobs)
-      .where(eq(cvAnalysisJobs.id, job_id))
+      .where(eq(cvAnalysisJobs.externalJobId, job_id))
       .limit(1);
 
     if (!job) {
+      console.log(`[CV-CALLBACK] No job found for external job_id=${job_id}`);
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    if (job.status === "completed") {
-      return NextResponse.json({ status: "already_completed" }, { status: 200 });
-    }
+    // 4. Map response to draft
+    const latencyMs = job.createdAt ? Date.now() - job.createdAt.getTime() : 0;
 
-    // 4. Map Mac Mini CVData → CandidateAutoFillDraftV2
-    const now = new Date();
-    const latencyMs = job.createdAt ? now.getTime() - job.createdAt.getTime() : 0;
+    const draft = mapMacMiniResponseToDraftV2(
+      cvData as MacMiniCvResponse,
+      job.fileName,
+      job.fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
+      job.fileSize,
+      latencyMs
+    );
 
-    const result = mapMacMiniToAutoFillDraft(data, {
-      fileName: job.fileName || "cv.pdf",
-      fileType: job.fileType || "pdf",
-      fileSize: job.fileSize || 0,
-      jobId: job_id,
-    });
+    const autofillCount = draft.filledFields?.length ?? 0;
+    const reviewCount = draft.ambiguousFields?.length ?? 0;
 
-    // Set actual processing time
-    result.metadata.processingTimeMs = latencyMs;
-
-    const autofillCount = result.filledFields.length;
-    const reviewCount = result.ambiguousFields.length;
-
-    // 5. Update job in DB
+    // 5. Update job as completed
     await db
       .update(cvAnalysisJobs)
       .set({
         status: "completed",
-        result: result as unknown as Record<string, unknown>,
+        result: draft as unknown as Record<string, unknown>,
         latencyMs,
         autofillFieldCount: autofillCount,
         reviewFieldCount: reviewCount,
-        updatedAt: now,
-        completedAt: now,
+        updatedAt: new Date(),
+        completedAt: new Date(),
       })
-      .where(eq(cvAnalysisJobs.id, job_id));
+      .where(eq(cvAnalysisJobs.id, job.id));
 
-    return NextResponse.json({ status: "ok", job_id }, { status: 200 });
-  } catch (error) {
-    console.error("cv-callback error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+    console.log(
+      `[CV-CALLBACK] Job ${job.id} completed | externalJobId=${job_id} | latency=${latencyMs}ms | fields=${autofillCount} autofill, ${reviewCount} review`
     );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[CV-CALLBACK] Unexpected error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

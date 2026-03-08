@@ -13,8 +13,10 @@ import { checkRateLimit, checkDailyQuota, checkTenantQuota, CV_ANALYSIS_RATE_LIM
 import { computeFileHash, getCachedResult, setCachedResult, DEDUPE_TTL_MS } from "@/lib/dedupe";
 import { cvLogger } from "@/lib/logger";
 import { metrics, CV_METRICS } from "@/lib/metrics";
-import { CVError, wrapError, isCVError } from "@/lib/cv-errors";
+import { CVError, wrapError, isCVError, type CVErrorCode } from "@/lib/cv-errors";
 import { CV_AUTOFILL_CONFIG } from "@/lib/constants";
+import { submitToLocalApi } from "@/lib/cv-extraction/extract-with-local-api";
+import { CvExtractionError } from "@/lib/cv-extraction/client";
 import { getExtractionConfigForJob } from "./extraction-config";
 
 const OVERALL_ANALYSIS_TIMEOUT_MS = 60000;
@@ -332,6 +334,58 @@ async function processCvAnalysisJob(
 
   cvLogger.info("Processing CV analysis", { jobId, action: "processCvAnalysisJob" });
 
+  const useLocalApi = !!process.env.CV_API_URL;
+
+  // --- Local Mac Mini LLM API path (async submit, no timeout needed) ---
+  if (useLocalApi) {
+    try {
+      cvLogger.info("Using local Mac Mini API for extraction (async)", { jobId, action: "processCvAnalysisJob" });
+
+      const { externalJobId } = await submitToLocalApi(fileBytes, fileName);
+
+      await db
+        .update(cvAnalysisJobs)
+        .set({ externalJobId, updatedAt: new Date() })
+        .where(eq(cvAnalysisJobs.id, jobId));
+
+      cvLogger.info("PDF submitted to Mac Mini, awaiting webhook callback", {
+        jobId,
+        externalJobId,
+        action: "processCvAnalysisJob",
+      });
+
+      // Job stays in "processing" — completion comes via /api/cv-callback webhook
+      return;
+    } catch (error) {
+      const latencyMs = Date.now() - startTime;
+
+      cvLogger.error("Failed to submit PDF to Mac Mini", {
+        jobId,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        action: "processCvAnalysisJob",
+      });
+
+      const cvError = error instanceof CvExtractionError
+        ? new CVError(error.code === "TIMEOUT" ? "ANALYSIS_TIMEOUT" : "ANALYSIS_FAILED")
+        : wrapError(error);
+
+      await db
+        .update(cvAnalysisJobs)
+        .set({
+          status: "failed",
+          error: cvError.userMessage,
+          errorCode: cvError.code,
+          latencyMs,
+          updatedAt: new Date(),
+          completedAt: new Date(),
+        })
+        .where(eq(cvAnalysisJobs.id, jobId));
+
+      return;
+    }
+  }
+
+  // --- Azure DI + Azure OpenAI fallback path (with timeout) ---
   const timeoutController = new AbortController();
   const overallTimeout = setTimeout(() => {
     isTimeout = true;
@@ -362,7 +416,7 @@ async function processCvAnalysisJob(
       throw new CVError("FILE_TOO_MANY_PAGES", { pages: docRep.pageCount });
     }
 
-    const latencyMs = Date.now() - startTime;
+    const azureLatencyMs = Date.now() - startTime;
 
     const mapperConfig: MapperConfig = {
       synonyms: extractionConfig.synonyms,
@@ -375,7 +429,7 @@ async function processCvAnalysisJob(
       fileName,
       fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
       fileSize,
-      latencyMs,
+      azureLatencyMs,
       mapperConfig
     );
 
@@ -384,7 +438,7 @@ async function processCvAnalysisJob(
       fileName,
       fileType as "pdf" | "png" | "jpg" | "jpeg" | "docx",
       fileSize,
-      latencyMs,
+      azureLatencyMs,
       fallbackResult
     );
 
@@ -402,6 +456,8 @@ async function processCvAnalysisJob(
         action: "processCvAnalysisJob",
       });
     }
+
+    const latencyMs = Date.now() - startTime;
 
     metrics.increment(CV_METRICS.ANALYSIS_SUCCESS);
     metrics.recordHistogram(CV_METRICS.ANALYSIS_LATENCY_MS, latencyMs);
@@ -432,7 +488,31 @@ async function processCvAnalysisJob(
     cvLogger.info("CV analysis completed", { jobId, durationMs: latencyMs, pageCount, autofillCount, reviewCount, action: "processCvAnalysisJob" });
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    const cvError = isCVError(error) ? error : wrapError(error);
+
+    // Log the real error for debugging
+    cvLogger.error("CV analysis error details", {
+      jobId,
+      errorName: error instanceof Error ? error.name : "Unknown",
+      errorMessage: error instanceof Error ? error.message : String(error),
+      action: "processCvAnalysisJob",
+    });
+
+    // Map CvExtractionError to CVError with meaningful messages
+    let cvError: CVError;
+    if (isCVError(error)) {
+      cvError = error;
+    } else if (error instanceof CvExtractionError) {
+      const codeMap: Record<string, CVErrorCode> = {
+        AUTH_FAILED: "AZURE_AUTH_FAILED",
+        TIMEOUT: "ANALYSIS_TIMEOUT",
+        CONFIG_ERROR: "INTERNAL_ERROR",
+        INVALID_PDF: "FILE_INVALID_TYPE",
+        API_ERROR: "ANALYSIS_FAILED",
+      };
+      cvError = new CVError(codeMap[error.code] ?? "ANALYSIS_FAILED");
+    } else {
+      cvError = wrapError(error);
+    }
 
     if (cvError.code === "ANALYSIS_TIMEOUT") {
       isTimeout = true;
