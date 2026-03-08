@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // 1. Validate API key
-    const apiKey = request.headers.get("Xmb-pdftojsonapi");
+    // 1. Validate callback secret (sent by Mac Mini from original X-Callback-Secret header)
+    const apiKey = request.headers.get("X-Callback-Secret");
     const expectedKey = process.env.CV_API_KEY;
 
     if (!expectedKey || apiKey !== expectedKey) {
