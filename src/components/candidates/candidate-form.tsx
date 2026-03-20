@@ -39,8 +39,10 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     postalCode: candidate?.postalCode ?? "",
     city: candidate?.city ?? "",
     canton: candidate?.canton ?? "",
+    nationality: candidate?.nationality ?? "",
     linkedinUrl: candidate?.linkedinUrl ?? "",
     targetRole: candidate?.targetRole ?? "",
+    industryExperience: candidate?.industryExperience ?? "",
     yearsOfExperience: candidate?.yearsOfExperience ?? 0,
     currentSalary: candidate?.currentSalary ?? 0,
     expectedSalary: candidate?.expectedSalary ?? 0,
@@ -55,8 +57,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     status: candidate?.status ?? "new",
   });
 
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(
-    (candidate?.skills as string[]) ?? []
+  const [skills, setSkills] = useState<{ category: string; details: string }[]>(
+    (candidate?.skills as { category: string; details: string }[]) ?? []
   );
 
   const [certificates, setCertificates] = useState<
@@ -157,8 +159,10 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
       companyName: formData.companyName || null,
       workloadPreference: formData.workloadPreference || null,
       noticePeriod: formData.noticePeriod || null,
+      nationality: formData.nationality || null,
+      industryExperience: formData.industryExperience || null,
       notes: formData.notes || null,
-      skills: selectedSkills,
+      skills: skills,
       certificates,
       languages,
       education,
@@ -201,8 +205,10 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     if (mappedData.postalCode) setFormData(prev => ({ ...prev, postalCode: mappedData.postalCode || "" }));
     if (mappedData.city) setFormData(prev => ({ ...prev, city: mappedData.city || "" }));
     if (mappedData.canton) setFormData(prev => ({ ...prev, canton: mappedData.canton || "" }));
+    if (mappedData.nationality) setFormData(prev => ({ ...prev, nationality: mappedData.nationality || "" }));
     if (mappedData.linkedinUrl) setFormData(prev => ({ ...prev, linkedinUrl: mappedData.linkedinUrl || "" }));
     if (mappedData.targetRole) setFormData(prev => ({ ...prev, targetRole: mappedData.targetRole || "" }));
+    if (mappedData.industryExperience) setFormData(prev => ({ ...prev, industryExperience: mappedData.industryExperience || "" }));
     if (mappedData.yearsOfExperience !== undefined) setFormData(prev => ({ ...prev, yearsOfExperience: mappedData.yearsOfExperience || 0 }));
     if (mappedData.currentSalary !== undefined) setFormData(prev => ({ ...prev, currentSalary: mappedData.currentSalary || 0 }));
     if (mappedData.expectedSalary !== undefined) setFormData(prev => ({ ...prev, expectedSalary: mappedData.expectedSalary || 0 }));
@@ -217,7 +223,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
     // Apply array fields
     if (mappedData.skills && mappedData.skills.length > 0) {
-      setSelectedSkills(mappedData.skills);
+      setSkills(mappedData.skills);
     }
     if (mappedData.languages && mappedData.languages.length > 0) {
       setLanguages(mappedData.languages);
@@ -263,12 +269,16 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     setCvDraft(null);
   };
 
-  const toggleSkill = (skillName: string) => {
-    setSelectedSkills(prev =>
-      prev.includes(skillName)
-        ? prev.filter(s => s !== skillName)
-        : [...prev, skillName]
-    );
+  const addSkill = () => {
+    setSkills([...skills, { category: "", details: "" }]);
+  };
+
+  const updateSkill = (index: number, field: string, value: string) => {
+    setSkills(prev => prev.map((skill, i) => i === index ? { ...skill, [field]: value } : skill));
+  };
+
+  const removeSkill = (index: number) => {
+    setSkills(skills.filter((_, i) => i !== index));
   };
 
   const addCertificate = () => {
@@ -500,7 +510,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               className="mt-1.5"
             />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <Label htmlFor="canton">Kanton</Label>
             <select
               id="canton"
@@ -537,6 +547,16 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               <option value="ZH">Zürich</option>
             </select>
           </div>
+          <div>
+            <Label htmlFor="nationality">Nationalität</Label>
+            <Input
+              id="nationality"
+              value={formData.nationality}
+              onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+              placeholder="z.B. Schweizer"
+              className="mt-1.5"
+            />
+          </div>
         </div>
       </section>
 
@@ -556,6 +576,16 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               onChange={(e) =>
                 setFormData({ ...formData, yearsOfExperience: parseInt(e.target.value) || 0 })
               }
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="industryExperience">Branchenerfahrung</Label>
+            <Input
+              id="industryExperience"
+              value={formData.industryExperience}
+              onChange={(e) => setFormData({ ...formData, industryExperience: e.target.value })}
+              placeholder="z.B. Finanzen, IT"
               className="mt-1.5"
             />
           </div>
@@ -698,30 +728,41 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
       {/* Skills */}
       <section className="rounded-xl border border-border bg-card p-4 lg:p-6">
-        <h2 className="text-base lg:text-lg font-semibold text-foreground mb-4">
-          Skills
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {availableSkills.map((skill) => (
-            <button
-              key={skill.id}
-              type="button"
-              onClick={() => toggleSkill(skill.name)}
-              className={`rounded-full px-3 py-1 text-sm font-medium transition-all ${
-                selectedSkills.includes(skill.name)
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              {skill.name}
-            </button>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base lg:text-lg font-semibold text-foreground">
+            Skills & Fachkenntnisse
+          </h2>
+          <Button type="button" onClick={addSkill} variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Hinzufügen
+          </Button>
+        </div>
+        <div className="space-y-4">
+          {skills.map((skill, i) => (
+            <div key={i} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="flex-1 grid gap-3 md:grid-cols-2">
+                <Input
+                  value={skill.category}
+                  onChange={(e) => updateSkill(i, "category", e.target.value)}
+                  placeholder="Kategorie (z.B. Sprachen/Frameworks)"
+                />
+                <Input
+                  value={skill.details}
+                  onChange={(e) => updateSkill(i, "details", e.target.value)}
+                  placeholder="Details (z.B. React, Node.js)"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => removeSkill(i)}
+                variant="ghost"
+                size="sm"
+                className="text-red-500"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           ))}
         </div>
-        {availableSkills.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Keine Skills verfügbar. Bitte fügen Sie Skills in den Einstellungen hinzu.
-          </p>
-        )}
       </section>
 
       {/* Languages */}

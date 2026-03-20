@@ -16,7 +16,7 @@ export interface CVUploadButtonProps {
 type UploadState = "idle" | "uploading" | "processing" | "completed" | "error";
 
 const POLL_INTERVAL_MS = 2000;
-const MAX_POLL_ATTEMPTS = 150; // 150 * 2s = 5 minutes max
+const MAX_POLL_ATTEMPTS = 300; // 300 * 2s = 10 minutes max (14B model needs more time)
 
 export function CVUploadButton({
   onUploadComplete,

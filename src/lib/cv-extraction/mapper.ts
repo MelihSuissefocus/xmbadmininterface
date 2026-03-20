@@ -301,14 +301,17 @@ export function mapMacMiniResponseToFilledFields(
   }
 
   if (data.ausbildungen.length > 0) {
-    const education: EducationEntry[] = data.ausbildungen.map((aus) => ({
-      degree: aus.abschluss,
-      institution: aus.institution,
-      startMonth: "",
-      startYear: "",
-      endMonth: "",
-      endYear: "",
-    }));
+    const education: EducationEntry[] = data.ausbildungen.map((aus) => {
+      const dates = aus.zeitraum ? parseZeitraum(aus.zeitraum) : null;
+      return {
+        degree: aus.abschluss,
+        institution: aus.institution,
+        startMonth: dates?.startMonth || "",
+        startYear: dates?.startYear || "",
+        endMonth: dates?.endMonth || "",
+        endYear: dates?.endYear || "",
+      };
+    });
 
     fields.push({
       targetField: "education",
@@ -460,14 +463,17 @@ export function mapMacMiniResponseToDraftV2(
   }
 
   if (data.ausbildungen.length > 0) {
-    const education = data.ausbildungen.map((aus) => ({
-      degree: aus.abschluss,
-      institution: aus.institution,
-      startMonth: "",
-      startYear: "",
-      endMonth: "",
-      endYear: "",
-    }));
+    const education = data.ausbildungen.map((aus) => {
+      const dates = aus.zeitraum ? parseZeitraum(aus.zeitraum) : null;
+      return {
+        degree: aus.abschluss,
+        institution: aus.institution,
+        startMonth: dates?.startMonth || "",
+        startYear: dates?.startYear || "",
+        endMonth: dates?.endMonth || "",
+        endYear: dates?.endYear || "",
+      };
+    });
 
     filledFields.push({
       targetField: "education",

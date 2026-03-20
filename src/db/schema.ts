@@ -201,6 +201,7 @@ export const candidates = pgTable("candidates", {
   birthdate: date("birthdate"),
   linkedinUrl: text("linkedin_url"),
   targetRole: text("target_role"),
+  nationality: text("nationality"),
   yearsOfExperience: integer("years_of_experience"),
   currentSalary: integer("current_salary"),
   expectedSalary: integer("expected_salary"),
@@ -208,10 +209,11 @@ export const candidates = pgTable("candidates", {
   workloadPreference: text("workload_preference"),
   noticePeriod: text("notice_period"),
   desiredHourlyRate: integer("desired_hourly_rate"),
+  industryExperience: text("industry_experience"),
   isSubcontractor: integer("is_subcontractor").default(0),
   companyName: text("company_name"),
   companyType: companyTypeEnum("company_type"),
-  skills: jsonb("skills").$type<string[]>(),
+  skills: jsonb("skills").$type<{ category: string; details: string; }[]>(),
   certificates: jsonb("certificates").$type<{
     name: string;
     issuer: string;

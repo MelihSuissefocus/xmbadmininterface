@@ -59,6 +59,11 @@ export interface CandidateAutoFillDraft {
 }
 
 // Form data types matching candidate-form.tsx structure
+export interface SkillEntry {
+  category: string;
+  details: string;
+}
+
 export interface LanguageEntry {
   language: string;
   level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "Muttersprache";
@@ -99,8 +104,10 @@ export interface CandidateFormData {
   postalCode?: string | null;
   city?: string | null;
   canton?: string | null;
+  nationality?: string | null;
   linkedinUrl?: string | null;
   targetRole?: string | null;
+  industryExperience?: string | null;
   yearsOfExperience?: number | null;
   currentSalary?: number | null;
   expectedSalary?: number | null;
@@ -113,7 +120,7 @@ export interface CandidateFormData {
   availableFrom?: string | null;
   notes?: string | null;
   status?: "new" | "reviewed" | "rejected" | "placed";
-  skills?: string[];
+  skills?: SkillEntry[];
   languages?: LanguageEntry[];
   certificates?: CertificateEntry[];
   education?: EducationEntry[];
