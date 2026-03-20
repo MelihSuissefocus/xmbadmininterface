@@ -43,7 +43,7 @@ export default async function CandidateDetailPage({
     notFound();
   }
 
-  const skills = (candidate.skills as string[]) ?? [];
+  const skills = (candidate.skills as { category: string; details: string }[] | null) ?? [];
   const certificates = (candidate.certificates as { name: string; issuer: string; date: string }[]) ?? [];
   const languages = (candidate.languages as { language: string; level: string }[]) ?? [];
   const education = (candidate.education as { degree: string; institution: string; startMonth: string; startYear: string; endMonth: string; endYear: string }[]) ?? [];
@@ -234,14 +234,12 @@ export default async function CandidateDetailPage({
               <h2 className="text-sm font-semibold text-foreground mb-3">
                 Skills
               </h2>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="space-y-2">
                 {skills.map((skill, i) => (
-                  <span
-                    key={i}
-                    className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                  >
-                    {skill}
-                  </span>
+                  <div key={i} className="flex flex-col gap-0.5">
+                    <span className="text-xs font-semibold text-foreground">{skill.category}</span>
+                    <span className="text-xs text-muted-foreground">{skill.details}</span>
+                  </div>
                 ))}
               </div>
             </section>
