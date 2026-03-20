@@ -41,16 +41,17 @@ export const mapCandidateToResume = (candidate: Candidate): Resume => {
     // 4. Skills
     const skillsList = candidate.skills || [];
     // Take top 6 as featured if available, or just map what we have
+    const skillStrings = skillsList.map((s) => typeof s === "string" ? s : s.details);
     const featuredSkills = initialFeaturedSkills.map((fs, idx) => {
-        if (idx < skillsList.length) {
-            return { skill: skillsList[idx], rating: 4 };
+        if (idx < skillStrings.length) {
+            return { skill: skillStrings[idx], rating: 4 };
         }
         return fs;
     });
 
     const skills: ResumeSkills = {
         featuredSkills: featuredSkills,
-        descriptions: skillsList.length > 6 ? skillsList.slice(6) : [],
+        descriptions: skillStrings.length > 6 ? skillStrings.slice(6) : [],
     };
 
     // 5. Projects (Default empty for now as Candidate schema doesn't have direct projects mapping)

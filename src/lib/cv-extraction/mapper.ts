@@ -246,7 +246,7 @@ export function mapMacMiniResponseToFilledFields(
   if (data.kernkompetenzen.length > 0) {
     fields.push({
       targetField: "skills",
-      extractedValue: data.kernkompetenzen,
+      extractedValue: data.kernkompetenzen.map((s) => ({ category: "", details: s })),
       confidence: "high",
       source: { text: `${data.kernkompetenzen.length} Kernkompetenzen` },
     });
@@ -340,12 +340,12 @@ export function mapMacMiniResponseToFilledFields(
     if (uniqueTools.length > 0) {
       const existingSkills = fields.find((f) => f.targetField === "skills");
       if (existingSkills && Array.isArray(existingSkills.extractedValue)) {
-        const merged = [
-          ...new Set([
-            ...(existingSkills.extractedValue as string[]),
-            ...uniqueTools,
-          ]),
-        ];
+        const existing = existingSkills.extractedValue as { category: string; details: string }[];
+        const existingDetails = new Set(existing.map((s) => s.details));
+        const newTools = uniqueTools
+          .filter((t) => !existingDetails.has(t))
+          .map((t) => ({ category: "Tools", details: t }));
+        const merged = [...existing, ...newTools];
         existingSkills.extractedValue = merged;
         existingSkills.source = {
           text: `${merged.length} Skills (Kompetenzen + Tools)`,
@@ -413,7 +413,8 @@ export function mapMacMiniResponseToDraftV2(
   if (data.kernkompetenzen.length > 0) {
     // Merge tools from experiences into skills
     const allTools = data.erfahrungen.flatMap((e) => e.tools);
-    const merged = [...new Set([...data.kernkompetenzen, ...allTools])];
+    const allStrings = [...new Set([...data.kernkompetenzen, ...allTools])];
+    const merged = allStrings.map((s) => ({ category: "", details: s }));
 
     filledFields.push({
       targetField: "skills",

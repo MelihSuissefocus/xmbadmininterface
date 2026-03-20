@@ -357,7 +357,7 @@ function convertToDraft(
     if (matchedSkills.length > 0) {
       filledFields.push({
         targetField: "skills",
-        extractedValue: matchedSkills,
+        extractedValue: matchedSkills.map((s) => ({ category: "", details: s })),
         confidence: "medium",
         source: { text: "Skills section" },
       });

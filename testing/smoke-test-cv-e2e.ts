@@ -275,7 +275,7 @@ async function createCandidateFromDraft(draft: Draft): Promise<string> {
       canton: payload.canton ? String(payload.canton) : null,
       linkedinUrl: payload.linkedinUrl ? String(payload.linkedinUrl) : null,
       targetRole: payload.targetRole ? String(payload.targetRole) : null,
-      skills: Array.isArray(payload.skills) ? payload.skills as string[] : null,
+      skills: Array.isArray(payload.skills) ? payload.skills as { category: string; details: string }[] : null,
       languages: Array.isArray(payload.languages)
         ? (payload.languages as { language: string; level: string }[])
         : null,

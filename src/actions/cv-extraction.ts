@@ -231,7 +231,7 @@ export async function extractFromCV(
     if (extractedSkills.length > 0) {
       filledFields.push({
         targetField: "skills",
-        extractedValue: extractedSkills,
+        extractedValue: extractedSkills.map((s) => ({ category: "", details: s })),
         confidence: "medium",
         source: { text: "Skills section" },
       });

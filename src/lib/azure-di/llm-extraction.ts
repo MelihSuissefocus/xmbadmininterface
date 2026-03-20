@@ -374,7 +374,7 @@ function buildDraftFromLlmResult(
 
     filledFields.push({
       targetField: "skills",
-      extractedValue: skillNames,
+      extractedValue: skillNames.map((s) => ({ category: "", details: s })),
       confidence: "medium",
       evidence,
     });

@@ -153,7 +153,7 @@ export const candidates = pgTable("candidates", {
   isSubcontractor: integer("is_subcontractor").default(0),
   companyName: text("company_name"),
   companyType: companyTypeEnum("company_type"),
-  skills: jsonb("skills").$type<string[]>(),
+  skills: jsonb("skills").$type<{ category: string; details: string }[]>(),
   certificates: jsonb("certificates").$type<{
     name: string;
     issuer: string;
