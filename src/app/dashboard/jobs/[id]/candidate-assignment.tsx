@@ -143,7 +143,7 @@ export function CandidateAssignment({
           </div>
         ) : (
           assignments.map(({ assignment, candidate }) => {
-            const skills = (candidate.skills as string[]) ?? [];
+            const skills = (candidate.skills as { category: string; details: string }[]) ?? [];
 
             return (
               <div key={candidate.id} className="p-3 lg:p-4">
@@ -209,7 +209,7 @@ export function CandidateAssignment({
                         key={i}
                         className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
                       >
-                        {skill}
+                        {skill.details}
                       </span>
                     ))}
                     {skills.length > 3 && (

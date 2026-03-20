@@ -15,7 +15,7 @@ export default async function CandidatesPage() {
   const allCertificates = new Set<string>();
 
   allCandidates.forEach((c) => {
-    (c.skills as string[] | null)?.forEach((s) => allSkills.add(s));
+    (c.skills as { category: string; details: string }[] | null)?.forEach((s) => allSkills.add(s.details));
     (c.certificates as { name: string }[] | null)?.forEach((cert) =>
       allCertificates.add(cert.name)
     );

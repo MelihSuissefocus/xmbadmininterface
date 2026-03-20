@@ -51,8 +51,8 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
     status: candidate?.status ?? "new",
   });
 
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(
-    (candidate?.skills as string[]) ?? []
+  const [selectedSkills, setSelectedSkills] = useState<{ category: string; details: string }[]>(
+    (candidate?.skills as { category: string; details: string }[]) ?? []
   );
 
   const [certificates, setCertificates] = useState<
@@ -157,9 +157,9 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
 
   const toggleSkill = (skillName: string) => {
     setSelectedSkills(prev =>
-      prev.includes(skillName)
-        ? prev.filter(s => s !== skillName)
-        : [...prev, skillName]
+      prev.some(s => s.details === skillName)
+        ? prev.filter(s => s.details !== skillName)
+        : [...prev, { category: "", details: skillName }]
     );
   };
 
@@ -574,7 +574,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
               type="button"
               onClick={() => toggleSkill(skill.name)}
               className={`rounded-full px-3 py-1 text-sm font-medium transition-all ${
-                selectedSkills.includes(skill.name)
+                selectedSkills.some(s => s.details === skill.name)
                   ? "bg-amber-500 text-black"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
               }`}

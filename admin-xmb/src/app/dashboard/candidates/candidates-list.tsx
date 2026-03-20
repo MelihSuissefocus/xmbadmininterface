@@ -63,17 +63,18 @@ export function CandidatesList({
         fullName.includes(searchLower) ||
         c.email?.toLowerCase().includes(searchLower) ||
         c.targetRole?.toLowerCase().includes(searchLower) ||
-        (c.skills as string[] | null)?.some((s) =>
-          s.toLowerCase().includes(searchLower)
+        (c.skills as { category: string; details: string }[] | null)?.some((s) =>
+          s.category.toLowerCase().includes(searchLower) || s.details.toLowerCase().includes(searchLower)
         );
 
       const matchesStatus =
         statusFilter.length === 0 || statusFilter.includes(c.status);
 
-      const candidateSkills = (c.skills as string[] | null) ?? [];
+      const candidateSkills = (c.skills as { category: string; details: string }[] | null) ?? [];
+      const candidateSkillNames = candidateSkills.map((s) => s.details);
       const matchesSkills =
         skillsFilter.length === 0 ||
-        skillsFilter.every((skill) => candidateSkills.includes(skill));
+        skillsFilter.every((skill) => candidateSkillNames.includes(skill));
 
       const candidateCerts =
         (c.certificates as { name: string }[] | null)?.map((cert) => cert.name) ?? [];
@@ -328,7 +329,7 @@ export function CandidatesList({
         <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredCandidates.map((candidate) => {
-              const skills = (candidate.skills as string[]) ?? [];
+              const skills = (candidate.skills as { category: string; details: string }[]) ?? [];
               const certificates = (candidate.certificates as { name: string }[]) ?? [];
               const languages = (candidate.languages as { language: string; level: string }[]) ?? [];
               const education = (candidate.education as { degree: string }[]) ?? [];
@@ -435,12 +436,12 @@ export function CandidatesList({
                             <span
                               key={i}
                               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                skillsFilter.includes(skill)
+                                skillsFilter.includes(skill.details)
                                   ? "bg-amber-500 text-black"
                                   : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
                               }`}
                             >
-                              {skill}
+                              {skill.details}
                             </span>
                           ))}
                           {skills.length > 8 && (

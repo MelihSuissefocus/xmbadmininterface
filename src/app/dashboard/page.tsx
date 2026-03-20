@@ -181,7 +181,7 @@ export default async function DashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {allCandidates.map((candidate) => {
-                  const skills = (candidate.skills as string[]) ?? [];
+                  const skills = (candidate.skills as { category: string; details: string }[]) ?? [];
 
                   return (
                     <Link
@@ -206,7 +206,7 @@ export default async function DashboardPage() {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground truncate">
-                          {candidate.targetRole || (skills.length > 0 ? skills.slice(0, 2).join(", ") : candidate.email)}
+                          {candidate.targetRole || (skills.length > 0 ? skills.slice(0, 2).map((s) => s.details).join(", ") : candidate.email)}
                         </p>
                       </div>
                     </Link>
