@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     const fileName = `CV_${candidate.firstName}_${candidate.lastName}.docx`;
 
-    return new Response(docxBuffer, {
+    return new Response(new Uint8Array(docxBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
