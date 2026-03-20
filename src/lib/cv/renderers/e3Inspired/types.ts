@@ -59,7 +59,7 @@ export interface CVData {
   variant: CVVariant;
   personal: CVPersonal;
   languages: CVLanguageEntry[];
-  skills: string[];
+  skills: { category: string; details: string }[];
   highlights: string[];
   education: CVEducationEntry[];
   certificates: CVCertificateEntry[];

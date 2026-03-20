@@ -306,7 +306,7 @@ function SkillsSection({ data }: { data: CVData }) {
   return (
     <View>
       <SectionTitle title="Kompetenzen" />
-      <Text style={s.skillText}>{data.skills.join(",  ")}</Text>
+      <Text style={s.skillText}>{data.skills.map(s => `${s.category}: ${s.details}`).join(",  ")}</Text>
     </View>
   );
 }

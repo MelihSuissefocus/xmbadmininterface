@@ -105,43 +105,23 @@ interface CategorizedSkill {
  * under "Weitere Kompetenzen".
  */
 function categorizeSkills(
-  skills: string[],
+  skills: CvContentData["skills"],
   languages: CvContentData["languages"]
 ): CategorizedSkill[] {
   const buckets: Record<string, string[]> = {};
-  const used = new Set<string>();
-
-  for (const cat of SKILL_CATEGORIES) {
-    buckets[cat.label] = [];
-  }
-  buckets["Weitere Kompetenzen"] = [];
 
   // Sprachen immer in die Sprach-Kategorie
   if (languages.length > 0) {
     buckets["Sprachen"] = languages.map(
       (l) => `${l.language} (${l.level})`
     );
-    // Mark language-like skills as used so they don't appear twice
-    for (const l of languages) {
-      used.add(l.language.toLowerCase());
-    }
   }
 
+  // Group skills by their category
   for (const skill of skills) {
-    if (used.has(skill.toLowerCase())) continue;
-    const lower = skill.toLowerCase();
-    let placed = false;
-    for (const cat of SKILL_CATEGORIES) {
-      if (cat.label === "Sprachen") continue; // handled above
-      if (cat.keywords.some((kw) => lower.includes(kw))) {
-        buckets[cat.label].push(skill);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) {
-      buckets["Weitere Kompetenzen"].push(skill);
-    }
+    const cat = skill.category || "Weitere Kompetenzen";
+    if (!buckets[cat]) buckets[cat] = [];
+    buckets[cat].push(skill.details);
   }
 
   // Build result – only non-empty categories
@@ -614,34 +594,24 @@ function SkillsSection({
 }: SubProps) {
   if (data.skills.length === 0) return null;
 
-  const cols = 3;
-  const rows: string[][] = [];
-  for (let i = 0; i < data.skills.length; i += cols) {
-    rows.push(data.skills.slice(i, i + cols));
-  }
-
   return (
     <View>
       <SectionTitle title="Kompetenzen" />
-      {rows.map((row, ri) => (
-        <View key={ri} style={s.skillRow}>
-          {row.map((skill, si) => (
+      {data.skills.map((skill, i) => (
+        <View key={i} style={s.skillRow}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
             <View
-              key={si}
-              style={[s.skillCell, { width: `${100 / cols}%` }]}
-            >
-              <View
-                style={[
-                  s.skillDot,
-                  {
-                    backgroundColor:
-                      config.global.primaryColor || oehlerColors.accent,
-                  },
-                ]}
-              />
-              <Text style={s.skillText}>{skill}</Text>
-            </View>
-          ))}
+              style={[
+                s.skillDot,
+                {
+                  backgroundColor:
+                    config.global.primaryColor || oehlerColors.accent,
+                },
+              ]}
+            />
+            <Text style={[s.skillText, { fontWeight: 700 }]}>{skill.category}</Text>
+          </View>
+          <Text style={[s.skillText, { marginLeft: 12 }]}>{skill.details}</Text>
         </View>
       ))}
     </View>

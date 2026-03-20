@@ -545,12 +545,6 @@ function SkillList({ config, data }: SubProps) {
 
   if (data.skills.length === 0) return null;
 
-  const cols = 3;
-  const rows: string[][] = [];
-  for (let i = 0; i < data.skills.length; i += cols) {
-    rows.push(data.skills.slice(i, i + cols));
-  }
-
   return (
     <View>
       <Text
@@ -562,19 +556,15 @@ function SkillList({ config, data }: SubProps) {
         Kompetenzen
       </Text>
 
-      {rows.map((row, ri) => (
-        <View key={ri} style={styles.skillRow}>
-          {row.map((skill, si) => (
+      {data.skills.map((skill, i) => (
+        <View key={i} style={styles.skillRow}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
             <View
-              key={si}
-              style={[styles.skillCell, { width: `${100 / cols}%` }]}
-            >
-              <View
-                style={[styles.skillDot, { backgroundColor: g.primaryColor }]}
-              />
-              <Text style={styles.skillText}>{skill}</Text>
-            </View>
-          ))}
+              style={[styles.skillDot, { backgroundColor: g.primaryColor }]}
+            />
+            <Text style={[styles.skillText, { fontWeight: 700 }]}>{skill.category}</Text>
+          </View>
+          <Text style={[styles.skillText, { marginLeft: 12 }]}>{skill.details}</Text>
         </View>
       ))}
     </View>

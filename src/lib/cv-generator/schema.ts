@@ -131,7 +131,7 @@ export interface CvContentData {
   personal: CvPersonalInfo;
   experience: CvExperienceEntry[];
   education: CvEducationEntry[];
-  skills: string[];
+  skills: { category: string; details: string }[];
   languages: CvLanguageEntry[];
   certificates: CvCertificateEntry[];
   highlights: string[];

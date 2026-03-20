@@ -139,14 +139,14 @@ describe("normalizeCandidateToCVData", () => {
   it("maps skills, languages, highlights, certificates", () => {
     const cv = normalizeCandidateToCVData(
       makeCandidate({
-        skills: ["Java", "Kotlin"],
+        skills: [{ category: "Programmierung", details: "Java" }, { category: "Programmierung", details: "Kotlin" }],
         languages: [{ language: "Deutsch", level: "C2" }],
         highlights: ["10 Jahre Erfahrung"],
         certificates: [{ name: "AWS SAP", issuer: "Amazon", date: "2023" }],
       }),
       "customer",
     );
-    expect(cv.skills).toEqual(["Java", "Kotlin"]);
+    expect(cv.skills).toEqual([{ category: "Programmierung", details: "Java" }, { category: "Programmierung", details: "Kotlin" }]);
     expect(cv.languages).toEqual([{ language: "Deutsch", level: "C2" }]);
     expect(cv.highlights).toEqual(["10 Jahre Erfahrung"]);
     expect(cv.certificates).toEqual([{ name: "AWS SAP", issuer: "Amazon", date: "2023" }]);
